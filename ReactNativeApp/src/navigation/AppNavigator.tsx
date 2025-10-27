@@ -1,12 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider, useAuth } from '../context/AuthContextSimple';
+import BottomNavigation from '../components/BottomNavigation';
 import HomeScreen from '../screens/HomeScreen';
 import CategoryListScreen from '../screens/CategoryListScreen';
 import ProductListingScreen from '../screens/ProductListingScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
+import FindProsScreen from '../screens/FindProsScreen';
+
+// Profile Screens
+import ProfileViewScreen from '../screens/profile/ProfileViewScreen';
+import ProfileEditScreen from '../screens/profile/ProfileEditScreen';
+import ClientProfileEditScreen from '../screens/profile/ClientProfileEditScreen';
+import ProjectAddScreen from '../screens/profile/ProjectAddScreen';
+import ProjectDetailScreen from '../screens/profile/ProjectDetailScreen';
 
 // Auth Screens
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
@@ -29,6 +38,12 @@ export type RootStackParamList = {
   CategoryList: undefined;
   ProductListing: { category: string };
   ProductDetail: { productId: string };
+  FindPros: undefined;
+  ProfileView: undefined;
+  ProfileEdit: undefined;
+  ClientProfileEdit: undefined;
+  ProjectAdd: undefined;
+  ProjectDetail: { projectId: string };
 };
 
 export type AuthStackParamList = {
@@ -73,9 +88,21 @@ const AuthNavigator: React.FC = () => {
 
 // Onboarding Stack Navigator
 const OnboardingNavigator: React.FC = () => {
+  const { user } = useAuth();
+  
+  // Determine initial route based on user's role
+  const getInitialRoute = (): keyof OnboardingStackParamList => {
+    if (user?.role === 'vendor') {
+      // If user is already a vendor, skip AccountType and UserDetails
+      return 'BusinessDetails';
+    }
+    // New users should start with account type selection
+    return 'AccountType';
+  };
+  
   return (
     <OnboardingStack.Navigator
-      initialRouteName="AccountType"
+      initialRouteName={getInitialRoute()}
       screenOptions={{
         headerShown: false,
       }}
@@ -91,65 +118,114 @@ const OnboardingNavigator: React.FC = () => {
   );
 };
 
-// Main App Stack Navigator
+// Bottom Navigation Component with Navigation
+const BottomNavComponent: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const [activeTab, setActiveTab] = useState<'home' | 'design' | 'pros' | 'estimate' | 'profile'>('home');
+
+  const handleTabPress = (tab: 'home' | 'design' | 'pros' | 'estimate' | 'profile') => {
+    setActiveTab(tab);
+    
+    // Navigate to the correct screen based on the tab
+    switch (tab) {
+      case 'home':
+        navigation.navigate('Home');
+        break;
+      case 'design':
+        navigation.navigate('CategoryList');
+        break;
+      case 'pros':
+        navigation.navigate('FindPros');
+        break;
+      case 'estimate':
+        // Navigate to estimate screen when implemented
+        break;
+      case 'profile':
+        navigation.navigate('ProfileView');
+        break;
+    }
+  };
+
+  return <BottomNavigation activeTab={activeTab} onTabPress={handleTabPress} />;
+};
+
+// Main App Stack Navigator with Bottom Navigation
 const MainNavigator: React.FC = () => {
+
   return (
-    <RootStack.Navigator
-      initialRouteName="Home"
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: '#f8f9fa',
-        },
-        headerTintColor: '#333',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      }}
-    >
+    <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        <RootStack.Navigator
+          initialRouteName="Home"
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#f8f9fa',
+            },
+            headerTintColor: '#333',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        >
       <RootStack.Screen 
         name="Home" 
         component={HomeScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}>LOGO</Text>
-              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
+              <TouchableOpacity 
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}
+                onPress={() => navigation.navigate('ProfileView')}
+              >
                 <Text style={{ fontSize: 16, color: '#333' }}>👤</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           ),
           headerTitleAlign: 'left',
-        }}
+          headerBackTitleVisible: false,
+          gestureEnabled: false,
+        })}
       />
       <RootStack.Screen 
         name="CategoryList" 
         component={CategoryListScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}>LOGO</Text>
-              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
+              <TouchableOpacity 
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}
+                onPress={() => navigation.navigate('ProfileView')}
+              >
                 <Text style={{ fontSize: 16, color: '#333' }}>👤</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           ),
           headerTitleAlign: 'left',
-        }}
+          headerLeft: () => null,
+          headerBackTitleVisible: false,
+          gestureEnabled: false,
+        })}
       />
       <RootStack.Screen
         name="ProductListing"
         component={ProductListingScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 20 }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}>LOGO</Text>
-              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
+              <TouchableOpacity 
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}
+                onPress={() => navigation.navigate('ProfileView')}
+              >
                 <Text style={{ fontSize: 16, color: '#333' }}>👤</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           ),
           headerTitleAlign: 'left',
           headerBackTitle: '',
+          headerLeft: () => null,
           headerStyle: {
             backgroundColor: '#ffffff',
             elevation: 0,
@@ -157,22 +233,26 @@ const MainNavigator: React.FC = () => {
             borderBottomWidth: 0,
           },
           headerTintColor: '#333333',
-        }}
+        })}
       />
       <RootStack.Screen 
         name="ProductDetail" 
         component={ProductDetailScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 20 }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}>LOGO</Text>
-              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
+              <TouchableOpacity 
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}
+                onPress={() => navigation.navigate('ProfileView')}
+              >
                 <Text style={{ fontSize: 16, color: '#333' }}>👤</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           ),
           headerTitleAlign: 'left',
           headerBackTitle: '',
+          headerLeft: () => null,
           headerStyle: {
             backgroundColor: '#ffffff',
             elevation: 0,
@@ -180,9 +260,56 @@ const MainNavigator: React.FC = () => {
             borderBottomWidth: 0,
           },
           headerTintColor: '#333333',
+        })}
+      />
+      <RootStack.Screen 
+        name="FindPros" 
+        component={FindProsScreen}
+        options={{
+          headerShown: false,
         }}
       />
-    </RootStack.Navigator>
+      
+      {/* Profile Screens */}
+      <RootStack.Screen 
+        name="ProfileView" 
+        component={ProfileViewScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <RootStack.Screen 
+        name="ProfileEdit" 
+        component={ProfileEditScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <RootStack.Screen 
+        name="ClientProfileEdit" 
+        component={ClientProfileEditScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <RootStack.Screen 
+        name="ProjectAdd" 
+        component={ProjectAddScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <RootStack.Screen 
+        name="ProjectDetail" 
+        component={ProjectDetailScreen}
+        options={{
+          headerShown: false,
+        }}
+              />
+        </RootStack.Navigator>
+      </View>
+      <BottomNavComponent />
+    </View>
   );
 };
 

@@ -51,13 +51,16 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>UIAppFonts</key>
+	<key>CFBundleURLTypes</key>
 	<array>
-		<string>Montserrat-Regular.ttf</string>
-		<string>Montserrat-Medium.ttf</string>
-		<string>Montserrat-SemiBold.ttf</string>
-		<string>Montserrat-Bold.ttf</string>
-		<string>Montserrat-Light.ttf</string>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>REVERSED_CLIENT_ID</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.96274365009-mmajaumsjv8ugr9bd3f2ba0cijm195mb</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

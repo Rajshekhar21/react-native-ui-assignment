@@ -1,37 +1,38 @@
-// AsyncStorage Fallback for development
-// This provides a fallback when the native AsyncStorage module is not available
+// AsyncStorage fallback for development
+// This prevents the app from crashing when AsyncStorage is not properly linked
 
 interface AsyncStorageFallback {
   getItem: (key: string) => Promise<string | null>;
   setItem: (key: string, value: string) => Promise<void>;
   removeItem: (key: string) => Promise<void>;
+  clear: () => Promise<void>;
 }
 
-// In-memory storage fallback
-const memoryStorage: { [key: string]: string } = {};
-
-const AsyncStorageFallback: AsyncStorageFallback = {
-  getItem: async (key: string): Promise<string | null> => {
-    return memoryStorage[key] || null;
-  },
-  setItem: async (key: string, value: string): Promise<void> => {
-    memoryStorage[key] = value;
-  },
-  removeItem: async (key: string): Promise<void> => {
-    delete memoryStorage[key];
-  },
-};
-
-// Try to import AsyncStorage, fallback to memory storage if not available
 let AsyncStorage: AsyncStorageFallback;
 
 try {
-  // Dynamic import to handle cases where the module isn't available
-  const AsyncStorageModule = require('@react-native-async-storage/async-storage');
-  AsyncStorage = AsyncStorageModule.default || AsyncStorageModule;
+  // Try to import the real AsyncStorage
+  AsyncStorage = require('@react-native-async-storage/async-storage').default;
 } catch (error) {
-  console.warn('AsyncStorage not available, using fallback:', error);
-  AsyncStorage = AsyncStorageFallback;
+  console.warn('AsyncStorage not available, using fallback storage');
+  
+  // Fallback to in-memory storage
+  const memoryStorage: { [key: string]: string } = {};
+  
+  AsyncStorage = {
+    getItem: async (key: string): Promise<string | null> => {
+      return memoryStorage[key] || null;
+    },
+    setItem: async (key: string, value: string): Promise<void> => {
+      memoryStorage[key] = value;
+    },
+    removeItem: async (key: string): Promise<void> => {
+      delete memoryStorage[key];
+    },
+    clear: async (): Promise<void> => {
+      Object.keys(memoryStorage).forEach(key => delete memoryStorage[key]);
+    },
+  };
 }
 
 export default AsyncStorage;

@@ -157,7 +157,13 @@ const BusinessDetailsScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.navigationContainer}>
             <CustomButton
               title="Back"
-              onPress={() => navigation.goBack()}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                } else {
+                  navigation.navigate('AccountType');
+                }
+              }}
               variant="secondary"
               style={styles.backButton}
             />

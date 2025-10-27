@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '../../navigation/AppNavigator';
 import { useAuth } from '../../context/AuthContextSimple';
+import { onboardingStore } from '../../store/onboardingStore';
 import AuthHeader from '../../components/AuthHeader';
 import CustomButton from '../../components/CustomButton';
 import { Colors } from '../../styles/colors';
@@ -15,10 +16,50 @@ interface Props {
 }
 
 const AccountTypeScreen: React.FC<Props> = ({ navigation }) => {
-  const { updateUser } = useAuth();
-  const [selectedType, setSelectedType] = useState<'individual' | 'business' | null>(null);
+  const { updateUserRole, isLoading, logout } = useAuth();
+  const [selectedType, setSelectedType] = useState<'user' | 'vendor' | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSelectType = (type: 'individual' | 'business') => {
+  const handleBack = () => {
+    if (__DEV__) {
+      console.log('🔙 handleBack called');
+    }
+    Alert.alert(
+      'Exit Onboarding?',
+      'Are you sure you want to exit? You will be logged out and need to sign in again.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            if (__DEV__) {
+              console.log('❌ User cancelled logout');
+            }
+          },
+        },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: async () => {
+            if (__DEV__) {
+              console.log('✅ User confirmed logout, logging out...');
+            }
+            try {
+              await logout();
+              if (__DEV__) {
+                console.log('✅ Logout successful');
+              }
+              // Navigation will be handled by AuthContext logout
+            } catch (error) {
+              console.error('❌ Error during logout:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSelectType = (type: 'user' | 'vendor') => {
     setSelectedType(type);
   };
 
@@ -26,24 +67,60 @@ const AccountTypeScreen: React.FC<Props> = ({ navigation }) => {
     if (!selectedType) return;
     
     try {
-      await updateUser({ accountType: selectedType });
-      navigation.navigate('UserDetails');
-    } catch (error) {
-      console.error('Error updating account type:', error);
+      setIsProcessing(true);
+      
+      if (__DEV__) {
+        console.log('🎯 handleContinue called, selectedType:', selectedType);
+      }
+      
+      // Store account type in onboarding store
+      await onboardingStore.setAccountType(selectedType);
+      
+      if (__DEV__) {
+        console.log('✅ Account type stored in onboarding store');
+      }
+      
+      // If user selects vendor, update their role in the backend
+      if (selectedType === 'vendor') {
+        if (__DEV__) {
+          console.log('🏢 Updating user role to vendor...');
+        }
+        await updateUserRole('vendor');
+        if (__DEV__) {
+          console.log('✅ User role updated to vendor, navigating to BusinessDetails');
+        }
+        // Navigate to vendor onboarding screens
+        navigation.navigate('BusinessDetails');
+      } else {
+        if (__DEV__) {
+          console.log('👤 Navigating to UserDetails for client');
+        }
+        // Navigate to user details for regular users
+        navigation.navigate('UserDetails');
+      }
+    } catch (error: any) {
+      console.error('❌ Error updating account type:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to update account type. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const accountTypes = [
     {
-      id: 'individual',
-      title: 'Individual',
-      description: 'For personal use and individual projects',
+      id: 'user',
+      title: 'Client',
+      description: 'Looking for interior design services',
       icon: '👤',
     },
     {
-      id: 'business',
-      title: 'Business',
-      description: 'For business and professional services',
+      id: 'vendor',
+      title: 'Professional',
+      description: 'Provide interior design services',
       icon: '🏢',
     },
   ];
@@ -65,7 +142,7 @@ const AccountTypeScreen: React.FC<Props> = ({ navigation }) => {
                   styles.card,
                   selectedType === type.id && styles.cardSelected
                 ]}
-                onPress={() => handleSelectType(type.id as 'individual' | 'business')}
+                onPress={() => handleSelectType(type.id as 'user' | 'vendor')}
                 activeOpacity={0.8}
               >
                 <View style={styles.cardContent}>
@@ -97,11 +174,18 @@ const AccountTypeScreen: React.FC<Props> = ({ navigation }) => {
 
           <View style={styles.navigationContainer}>
             <CustomButton
-              title="Continue"
+              title={isProcessing ? "Processing..." : "Continue"}
               onPress={handleContinue}
-              disabled={!selectedType}
+              disabled={!selectedType || isProcessing || isLoading}
               style={styles.continueButton}
             />
+            
+            <TouchableOpacity 
+              style={styles.backToLoginButton}
+              onPress={handleBack}
+            >
+              <Text style={styles.backToLoginText}>Back to Login</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -187,6 +271,16 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     marginBottom: 20,
+  },
+  backToLoginButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  backToLoginText: {
+    fontSize: 16,
+    fontFamily: Fonts.medium,
+    color: Colors.primary,
+    textDecorationLine: 'underline',
   },
 });
 

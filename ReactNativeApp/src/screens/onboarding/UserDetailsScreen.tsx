@@ -74,7 +74,8 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
         email: formData.email,
       });
       
-      if (user?.accountType === 'business') {
+      // Navigate based on user role
+      if (user?.role === 'vendor') {
         navigation.navigate('BusinessDetails');
       } else {
         navigation.navigate('ProfessionalProfile');
@@ -85,7 +86,8 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSkip = () => {
-    if (user?.accountType === 'business') {
+    // Navigate based on user role
+    if (user?.role === 'vendor') {
       navigation.navigate('BusinessDetails');
     } else {
       navigation.navigate('ProfessionalProfile');

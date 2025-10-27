@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "96274365009",
+    "firebase_url": "https://decormate-6b483-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "decormate-6b483",
+    "storage_bucket": "decormate-6b483.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:96274365009:android:ea38057306f8d521925670",
+        "android_client_info": {
+          "package_name": "com.decormate.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "96274365009-efbr6hja4074pef80peb54n1u33ke7dj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBw52LFRPTV_u9wTVt3_t1Qu7WejuJ-gRo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "96274365009-efbr6hja4074pef80peb54n1u33ke7dj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

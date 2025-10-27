@@ -1,9 +1,10 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import AppNavigator from './src/navigation/AppNavigator';
+import './src/config/firebase'; // Initialize Firebase
+import AppNavigatorWithAuth from './src/navigation/AppNavigator';
 
 const App: React.FC = () => {
-  return <AppNavigator />;
+  return <AppNavigatorWithAuth />;
 };
 
 export default App;

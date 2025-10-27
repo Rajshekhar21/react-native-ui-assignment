@@ -14,6 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Fonts } from '../styles/fonts';
 import { Colors } from '../styles/colors';
+import { getFeaturedDesigners, getInspirationProjects, getRecentWork, getServices, FeaturedDesigner, InspirationProject, RecentWork, Service } from '../services/homeService';
 
 const { width } = Dimensions.get('window');
 
@@ -26,244 +27,351 @@ interface Props {
   navigation: HomeScreenNavigationProp;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  image: string;
-}
-
-interface Designer {
-  id: string;
-  name: string;
-  profession: string;
-  experience: string;
-  location: string;
-  avatar: string;
-  description: string;
-}
-
-interface Testimonial {
-  id: string;
-  name: string;
-  role: string;
-  text: string;
-}
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  image: string;
-}
-
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentInspirationIndex, setCurrentInspirationIndex] = useState(0);
+  const [designers, setDesigners] = useState<FeaturedDesigner[]>([]);
+  const [inspirationProjects, setInspirationProjects] = useState<InspirationProject[]>([]);
+  const [recentWork, setRecentWork] = useState<RecentWork[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [activeCategory, setActiveCategory] = useState('Bedroom Design');
   const [currentDesignerIndex, setCurrentDesignerIndex] = useState(0);
+  const [currentInspirationIndex, setCurrentInspirationIndex] = useState(0);
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
 
-  const inspirationScrollRef = useRef<ScrollView>(null);
   const designerScrollRef = useRef<ScrollView>(null);
+  const inspirationScrollRef = useRef<ScrollView>(null);
   const projectScrollRef = useRef<ScrollView>(null);
   const testimonialScrollRef = useRef<ScrollView>(null);
 
-  // Mock data for designers
-  const designers: Designer[] = [
-    {
-      id: '1',
-      name: 'Akash Sharma',
-      profession: 'Interior Designer',
-      experience: '10 years',
-      location: 'Dehradun, Uttarakhand',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      description: 'Passionate about creating beautiful and functional spaces that reflect your personality and lifestyle. Specializing in modern and contemporary designs.',
-    },
-    {
-      id: '2',
-      name: 'Priya Patel',
-      profession: 'Architect',
-      experience: '8 years',
-      location: 'Mumbai, Maharashtra',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-      description: 'Expert in residential and commercial architecture with a focus on sustainable design and innovative solutions.',
-    },
-    {
-      id: '3',
-      name: 'Rajesh Kumar',
-      profession: 'Interior Designer',
-      experience: '12 years',
-      location: 'Delhi, NCR',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      description: 'Award-winning designer with expertise in luxury residential projects and hospitality design.',
-    },
-    {
-      id: '4',
-      name: 'Sneha Gupta',
-      profession: 'Space Planner',
-      experience: '6 years',
-      location: 'Bangalore, Karnataka',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      description: 'Specializing in space optimization and functional design for small and medium-sized homes.',
-    },
-    {
-      id: '5',
-      name: 'Vikram Singh',
-      profession: 'Interior Designer',
-      experience: '15 years',
-      location: 'Pune, Maharashtra',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-      description: 'Veteran designer with extensive experience in traditional and fusion interior design styles.',
-    },
+  // Mock testimonials data
+  const testimonials = [
+    { id: '1', name: 'Akash', role: 'UI/UX Designer', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+    { id: '2', name: 'Priya', role: 'Product Manager', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+    { id: '3', name: 'Rajesh', role: 'Software Engineer', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
   ];
 
-  // Mock data for testimonials
-  const testimonials: Testimonial[] = [
-    {
-      id: '1',
-      name: 'Akash',
-      role: 'UI/UX Designer',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.',
-    },
-    {
-      id: '2',
-      name: 'Priya',
-      role: 'Product Manager',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.',
-    },
-    {
-      id: '3',
-      name: 'Rajesh',
-      role: 'Software Engineer',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.',
-    },
-    {
-      id: '4',
-      name: 'Sneha',
-      role: 'Marketing Manager',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.',
-    },
-    {
-      id: '5',
-      name: 'Vikram',
-      role: 'Business Analyst',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.',
-    },
-  ];
+  const categories = ['Bedroom Design', 'Kitchen Design', 'Living Room', 'Office'];
 
-  // Mock data for recent projects
-  const projects: Project[] = [
-    {
-      id: '1',
-      title: 'Modern Open Kitchen',
-      description: 'Design with Granite Island and Mosaic Backsplash',
-      location: 'Dehradun, Uttrakhand',
-      image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
-    },
-    {
-      id: '2',
-      title: 'Contemporary Living Room',
-      description: 'Minimalist design with premium finishes',
-      location: 'Mumbai, Maharashtra',
-      image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
-    },
-    {
-      id: '3',
-      title: 'Luxury Master Bedroom',
-      description: 'Elegant design with custom furniture',
-      location: 'Delhi, NCR',
-      image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=300&fit=crop',
-    },
-  ];
+  useEffect(() => {
+    fetchHomeData();
+  }, []);
 
-  const fetchCategories = async () => {
+  useEffect(() => {
+    fetchInspirationProjects(activeCategory);
+  }, [activeCategory]);
+
+  const fetchHomeData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://interiorbackend-a1kf.onrender.com/api/categories');
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.data.length > 0) {
-          const transformedCategories: Category[] = data.data.map((category: any) => ({
-            id: category._id,
-            name: category.title,
-            image: category.processedImageUrl || category.imageUrl || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
-          }));
-          setCategories(transformedCategories);
-        } else {
-          // Fallback data
-          setCategories([
-            {
-              id: '1',
-              name: 'Bedroom Design',
-              image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
-            },
-            {
-              id: '2',
-              name: 'Living Room Design',
-              image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
-            },
-            {
-              id: '3',
-              name: 'Kitchen Design',
-              image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=300&fit=crop',
-            },
-          ]);
-        }
-      } else {
-        // Fallback data
-        setCategories([
-          {
-            id: '1',
-            name: 'Bedroom Design',
-            image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
-          },
-          {
-            id: '2',
-            name: 'Living Room Design',
-            image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
-          },
-          {
-            id: '3',
-            name: 'Kitchen Design',
-            image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=300&fit=crop',
-          },
-        ]);
-      }
-    } catch (error) {
-      console.log('Error fetching categories:', error);
-      // Fallback data
-      setCategories([
-        {
-          id: '1',
-          name: 'Bedroom Design',
-          image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
-        },
-        {
-          id: '2',
-          name: 'Living Room Design',
-          image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
-        },
-        {
-          id: '3',
-          name: 'Kitchen Design',
-          image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=300&fit=crop',
-        },
+      // Fetch all homepage data
+      const [designersData, projectsData, workData, servicesData] = await Promise.all([
+        getFeaturedDesigners().catch(() => []),
+        getInspirationProjects().catch(() => []),
+        getRecentWork().catch(() => []),
+        getServices().catch(() => []),
       ]);
+
+      setDesigners(designersData);
+      setInspirationProjects(projectsData);
+      setRecentWork(workData);
+      setServices(servicesData);
+    } catch (error) {
+      console.error('Error fetching home data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  const fetchInspirationProjects = async (category: string) => {
+    try {
+      const data = await getInspirationProjects(category);
+      setInspirationProjects(data);
+    } catch (error) {
+      console.error('Error fetching inspiration projects:', error);
+    }
+  };
+
+  const scrollToDesigner = (index: number) => {
+    if (designerScrollRef.current) {
+      designerScrollRef.current.scrollTo({
+        x: index * (width - 40),
+        animated: true,
+      });
+    }
+    setCurrentDesignerIndex(index);
+  };
+
+  const scrollToInspiration = (index: number) => {
+    if (inspirationScrollRef.current) {
+      inspirationScrollRef.current.scrollTo({
+        x: index * (width - 80),
+        animated: true,
+      });
+    }
+    setCurrentInspirationIndex(index);
+  };
+
+  const scrollToProject = (index: number) => {
+    if (projectScrollRef.current) {
+      projectScrollRef.current.scrollTo({
+        x: index * (width - 80),
+        animated: true,
+      });
+    }
+    setCurrentProjectIndex(index);
+  };
+
+  const handleBookConsultation = () => {
+    // Navigate to consultation booking screen
+    navigation.navigate('CategoryList');
+  };
+
+  const handleDesignerProfile = (designerId: string) => {
+    // Navigate to designer profile
+    navigation.navigate('ProfileView');
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  const renderHeroSection = () => (
+    <View style={styles.heroSection}>
+      <Image
+        source={{ uri: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=400&fit=crop' }}
+        style={styles.heroImage}
+      />
+      <View style={styles.heroOverlay}>
+        <TouchableOpacity style={styles.consultationButton} onPress={handleBookConsultation}>
+          <Text style={styles.consultationButtonText}>Book Your Consultation Now</Text>
+          <Text style={styles.arrowIcon}>→</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderHowWeWorkSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>How we Work</Text>
+      <Text style={styles.sectionSubtitle}>
+        Creative solutions, delivered right, always with utmost care.
+      </Text>
+      <View style={styles.processGrid}>
+        <View style={styles.processCard}>
+          <Text style={styles.processIcon}>��</Text>
+          <Text style={styles.processTitle}>Post Your Requirement</Text>
+          <Text style={styles.processSubtitle}>Share your project details & budget</Text>
+        </View>
+        <View style={styles.processCard}>
+          <Text style={styles.processIcon}>��</Text>
+          <Text style={styles.processTitle}>Get Matched</Text>
+          <Text style={styles.processSubtitle}>Receive 2-3 verified professional matches</Text>
+        </View>
+        <View style={styles.processCard}>
+          <Text style={styles.processIcon}>��</Text>
+          <Text style={styles.processTitle}>Compare & Connect</Text>
+          <Text style={styles.processSubtitle}>Review profiles, portfolios & quotes</Text>
+        </View>
+        <View style={styles.processCard}>
+          <Text style={[styles.processIcon, styles.redIcon]}>��</Text>
+          <Text style={styles.processTitle}>Start Your Project</Text>
+          <Text style={styles.processSubtitle}>Begin your dream transformation</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderInspirationDesignIdeasSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Inspiration Design Ideas</Text>
+      <Text style={styles.sectionSubtitle}>
+        Ideas that inspire your next creative project and elevate every design.
+      </Text>
+      <ScrollView
+        ref={inspirationScrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleInspirationScroll}
+        style={styles.carouselContainer}
+      >
+        {inspirationProjects.map((project, index) => (
+          <TouchableOpacity 
+            key={project.id} 
+            style={styles.inspirationCard}
+            onPress={() => navigation.navigate('ProductDetail', { productId: project.id })}
+          >
+            <Image source={{ uri: project.imageUrl || project.image }} style={styles.inspirationImage} />
+            <View style={styles.inspirationOverlay}>
+              <Text style={styles.inspirationLabel}>{project.title}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      {renderPaginationDots(currentInspirationIndex, inspirationProjects.length, scrollToInspiration)}
+      
+      <TouchableOpacity 
+        style={styles.browseCategoriesButton}
+        onPress={() => navigation.navigate('CategoryList')}
+      >
+        <Text style={styles.browseCategoriesButtonText}>Browse All Categories</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderFeaturedDesignersSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Featured Designers</Text>
+      <Text style={styles.sectionSubtitle}>
+        Meet the talented designers shaping trends and creating exceptional spaces.
+      </Text>
+      <ScrollView
+        ref={designerScrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleDesignerScroll}
+        style={styles.carouselContainer}
+        contentContainerStyle={styles.designerCarouselContent}
+      >
+        {designers.map((designer, index) => (
+          <View key={designer.id} style={styles.designerCard}>
+            <Image source={{ uri: designer.profileImage || designer.avatar }} style={styles.designerAvatar} />
+            <Text style={styles.designerName}>{designer.name}</Text>
+            <Text style={styles.designerProfession}>
+              {designer.profession || 'Designer'} | Exp. {designer.experienceYears || designer.experience || 0} years
+            </Text>
+            <View style={styles.designerLocation}>
+              <Text style={styles.locationIcon}>📍</Text>
+              <Text style={styles.designerLocationText}>
+                {typeof designer.location === 'string' 
+                  ? designer.location 
+                  : `${(designer.location as any)?.city || 'Unknown'}${(designer.location as any)?.area ? ', ' + (designer.location as any).area : ''}`}
+              </Text>
+            </View>
+            <Text style={styles.designerDescription}>{designer.shortDescription || designer.description}</Text>
+            <TouchableOpacity 
+              style={styles.profileButton}
+              onPress={() => handleDesignerProfile(designer.id)}
+            >
+              <Text style={styles.profileButtonText}>Profile →</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+      {renderPaginationDots(currentDesignerIndex, designers.length, scrollToDesigner)}
+    </View>
+  );
+
+  const renderSpotlightSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Spotlight</Text>
+      <Text style={styles.sectionSubtitle}>
+        Discover the ideas driving today's creative trends
+      </Text>
+      <View style={styles.spotlightCard}>
+        <Image
+          source={{ uri: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=300&fit=crop' }}
+          style={styles.spotlightImage}
+        />
+        <TouchableOpacity style={styles.spotlightButton}>
+          <Text style={styles.spotlightButtonIcon}>↗</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.spotlightTitle}>Purchase Securely</Text>
+      <Text style={styles.spotlightDescription}>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+      </Text>
+    </View>
+  );
+
+  const renderRecentWorkSection = () => (
+    <View style={styles.recentWorkSection}>
+      <Text style={styles.recentWorkTitle}>Recent Work</Text>
+      <Text style={styles.recentWorkSubtitle}>
+        A showcase of our latest designs and creative solutions.
+      </Text>
+      <View style={styles.projectCarouselContainer}>
+        <TouchableOpacity
+          style={styles.navArrow}
+          onPress={() => {
+            const newIndex = currentProjectIndex > 0 ? currentProjectIndex - 1 : recentWork.length - 1;
+            scrollToProject(newIndex);
+          }}
+        >
+          <Text style={styles.navArrowIcon}>←</Text>
+        </TouchableOpacity>
+        <ScrollView
+          ref={projectScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleProjectScroll}
+          style={styles.projectCarousel}
+          contentContainerStyle={styles.projectCarouselContent}
+        >
+          {recentWork.map((project, index) => (
+            <View key={project.id} style={styles.projectCard}>
+              <Image source={{ uri: project.imageUrl || project.image }} style={styles.projectImage} />
+              <View style={styles.projectContent}>
+                <Text style={styles.projectTitle}>{project.title}</Text>
+                <Text style={styles.projectDescription}>{project.description || 'No description available'}</Text>
+                <View style={styles.projectLocation}>
+                  <Text style={styles.locationIcon}>📍</Text>
+                  <Text style={styles.projectLocationText}>{project.location}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+        <TouchableOpacity
+          style={styles.navArrow}
+          onPress={() => {
+            const newIndex = currentProjectIndex < recentWork.length - 1 ? currentProjectIndex + 1 : 0;
+            scrollToProject(newIndex);
+          }}
+        >
+          <Text style={styles.navArrowIcon}>→</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderWhatPeopleThinksSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>What people thinks</Text>
+      <Text style={styles.sectionSubtitle}>
+        Real stories from clients who transformed their spaces with us.
+      </Text>
+      <ScrollView
+        ref={testimonialScrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleTestimonialScroll}
+        style={styles.carouselContainer}
+        contentContainerStyle={styles.testimonialCarouselContent}
+      >
+        {testimonials.map((testimonial) => (
+          <View key={testimonial.id} style={styles.testimonialCard}>
+            <Text style={styles.quoteIcon}>"</Text>
+            <Text style={styles.testimonialName}>{testimonial.name}</Text>
+            <Text style={styles.testimonialRole}>{testimonial.role}</Text>
+            <Text style={styles.testimonialText}>{testimonial.text}</Text>
+          </View>
+        ))}
+      </ScrollView>
+      {renderPaginationDots(currentTestimonialIndex, testimonials.length, scrollToTestimonial)}
+    </View>
+  );
 
   const handleInspirationScroll = (event: any) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(contentOffsetX / (width - 40));
+    const index = Math.round(contentOffsetX / (width - 80));
     setCurrentInspirationIndex(index);
   };
 
@@ -288,32 +396,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setCurrentTestimonialIndex(index);
   };
 
-  const scrollToInspiration = (index: number) => {
-    setCurrentInspirationIndex(index);
-    inspirationScrollRef.current?.scrollTo({
-      x: index * (width - 40),
-      animated: true,
-    });
-  };
-
-  const scrollToDesigner = (index: number) => {
-    setCurrentDesignerIndex(index);
-    const cardWidth = width * 0.85;
-    designerScrollRef.current?.scrollTo({
-      x: index * cardWidth,
-      animated: true,
-    });
-  };
-
-  const scrollToProject = (index: number) => {
-    setCurrentProjectIndex(index);
-    const cardWidth = width * 0.75;
-    projectScrollRef.current?.scrollTo({
-      x: index * cardWidth,
-      animated: true,
-    });
-  };
-
   const scrollToTestimonial = (index: number) => {
     setCurrentTestimonialIndex(index);
     const cardWidth = width * 0.85;
@@ -327,59 +409,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('CategoryList');
   };
 
-  const renderInspirationCard = (category: Category, index: number) => (
-    <TouchableOpacity 
-      key={category.id} 
-      style={styles.inspirationCard}
-      onPress={handleBrowseCategories}
-    >
-      <Image source={{ uri: category.image }} style={styles.inspirationImage} />
-      <View style={styles.inspirationOverlay}>
-        <Text style={styles.inspirationLabel}>{category.name}</Text>
-      </View>
-    </TouchableOpacity>
-  );
 
-  const renderDesignerCard = (designer: Designer, index: number) => (
-    <View key={designer.id} style={styles.designerCard}>
-      <Image source={{ uri: designer.avatar }} style={styles.designerAvatar} />
-      <Text style={styles.designerName}>{designer.name}</Text>
-      <Text style={styles.designerProfession}>
-        {designer.profession} | Exp. {designer.experience}
-      </Text>
-      <View style={styles.designerLocation}>
-        <Text style={styles.locationIcon}>📍</Text>
-        <Text style={styles.designerLocationText}>{designer.location}</Text>
-      </View>
-      <Text style={styles.designerDescription}>{designer.description}</Text>
-      <TouchableOpacity style={styles.profileButton}>
-        <Text style={styles.profileButtonText}>Profile →</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderProjectCard = (project: Project, index: number) => (
-    <View key={project.id} style={styles.projectCard}>
-      <Image source={{ uri: project.image }} style={styles.projectImage} />
-      <View style={styles.projectContent}>
-        <Text style={styles.projectTitle}>{project.title}</Text>
-        <Text style={styles.projectDescription}>{project.description}</Text>
-        <View style={styles.projectLocation}>
-          <Text style={styles.locationIcon}>📍</Text>
-          <Text style={styles.projectLocationText}>{project.location}</Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderTestimonialCard = (testimonial: Testimonial, index: number) => (
-    <View key={testimonial.id} style={styles.testimonialCard}>
-      <Text style={styles.quoteIcon}>"</Text>
-      <Text style={styles.testimonialName}>{testimonial.name}</Text>
-      <Text style={styles.testimonialRole}>{testimonial.role}</Text>
-      <Text style={styles.testimonialText}>{testimonial.text}</Text>
-    </View>
-  );
 
   const renderPaginationDots = (currentIndex: number, totalItems: number, onPress: (index: number) => void) => {
     // Limit to maximum 5 dots for better UX
@@ -427,181 +457,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Action Buttons */}
-      <View style={styles.actionButtonsContainer}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={handleBrowseCategories}
-        >
-          <Text style={styles.actionButtonIcon}>👷</Text>
-          <Text style={styles.actionButtonText}>Find a Designer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionButtonIcon}>🚀</Text>
-          <Text style={styles.actionButtonText}>Post Your Project</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Hero Section */}
-      <View style={styles.heroSection}>
-        <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop' }}
-          style={styles.heroImage}
-        />
-      </View>
-
-      {/* How We Work Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>How we Work</Text>
-        <Text style={styles.sectionSubtitle}>
-          Creative solutions, delivered right, always with utmost care.
-        </Text>
-        <View style={styles.processGrid}>
-          <View style={styles.processCard}>
-            <Text style={styles.processIcon}>📄</Text>
-            <Text style={styles.processTitle}>Post Your Requirement</Text>
-            <Text style={styles.processSubtitle}>Share your project details & budget</Text>
-          </View>
-          <View style={styles.processCard}>
-            <Text style={styles.processIcon}>👥</Text>
-            <Text style={styles.processTitle}>Get Matched</Text>
-            <Text style={styles.processSubtitle}>Receive 2-3 verified professional matches</Text>
-          </View>
-          <View style={styles.processCard}>
-            <Text style={styles.processIcon}>🔗</Text>
-            <Text style={styles.processTitle}>Compare & Connect</Text>
-            <Text style={styles.processSubtitle}>Review profiles, portfolios & quotes</Text>
-          </View>
-          <View style={styles.processCard}>
-            <Text style={[styles.processIcon, styles.redIcon]}>🚀</Text>
-            <Text style={styles.processTitle}>Start Your Project</Text>
-            <Text style={styles.processSubtitle}>Begin your dream transformation</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Inspiration Design Ideas Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Inspiration Design Ideas</Text>
-        <Text style={styles.sectionSubtitle}>
-          Ideas that inspire your next creative project and elevate every design.
-        </Text>
-        <ScrollView
-          ref={inspirationScrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleInspirationScroll}
-          style={styles.carouselContainer}
-        >
-          {categories.map((category, index) => renderInspirationCard(category, index))}
-        </ScrollView>
-        {renderPaginationDots(currentInspirationIndex, categories.length, scrollToInspiration)}
-        
-        <TouchableOpacity 
-          style={styles.browseCategoriesButton}
-          onPress={handleBrowseCategories}
-        >
-          <Text style={styles.browseCategoriesButtonText}>Browse All Categories</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Featured Designers Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Featured Designers</Text>
-        <Text style={styles.sectionSubtitle}>
-          Meet the talented designers shaping trends and creating exceptional spaces.
-        </Text>
-        <ScrollView
-          ref={designerScrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleDesignerScroll}
-          style={styles.carouselContainer}
-          contentContainerStyle={styles.designerCarouselContent}
-        >
-          {designers.map((designer, index) => renderDesignerCard(designer, index))}
-        </ScrollView>
-        {renderPaginationDots(currentDesignerIndex, designers.length, scrollToDesigner)}
-      </View>
-
-      {/* Spotlight Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Spotlight</Text>
-        <Text style={styles.sectionSubtitle}>
-          Discover the ideas driving today's creative trends
-        </Text>
-        <View style={styles.spotlightCard}>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=300&fit=crop' }}
-            style={styles.spotlightImage}
-          />
-          <TouchableOpacity style={styles.spotlightButton}>
-            <Text style={styles.spotlightButtonIcon}>↗</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.spotlightTitle}>Purchase Securely</Text>
-        <Text style={styles.spotlightDescription}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        </Text>
-      </View>
-
-      {/* Recent Work Section */}
-      <View style={styles.recentWorkSection}>
-        <Text style={styles.recentWorkTitle}>Recent Work</Text>
-        <Text style={styles.recentWorkSubtitle}>
-          A showcase of our latest designs and creative solutions.
-        </Text>
-        <View style={styles.projectCarouselContainer}>
-          <TouchableOpacity
-            style={styles.navArrow}
-            onPress={() => {
-              const newIndex = currentProjectIndex > 0 ? currentProjectIndex - 1 : projects.length - 1;
-              scrollToProject(newIndex);
-            }}
-          >
-            <Text style={styles.navArrowIcon}>←</Text>
-          </TouchableOpacity>
-          <ScrollView
-            ref={projectScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleProjectScroll}
-            style={styles.projectCarousel}
-            contentContainerStyle={styles.projectCarouselContent}
-          >
-            {projects.map((project, index) => renderProjectCard(project, index))}
-          </ScrollView>
-          <TouchableOpacity
-            style={styles.navArrow}
-            onPress={() => {
-              const newIndex = currentProjectIndex < projects.length - 1 ? currentProjectIndex + 1 : 0;
-              scrollToProject(newIndex);
-            }}
-          >
-            <Text style={styles.navArrowIcon}>→</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* What People Thinks Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>What people thinks</Text>
-        <Text style={styles.sectionSubtitle}>
-          Real stories from clients who transformed their spaces with us.
-        </Text>
-        <ScrollView
-          ref={testimonialScrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleTestimonialScroll}
-          style={styles.carouselContainer}
-          contentContainerStyle={styles.testimonialCarouselContent}
-        >
-          {testimonials.map((testimonial, index) => renderTestimonialCard(testimonial, index))}
-        </ScrollView>
-        {renderPaginationDots(currentTestimonialIndex, testimonials.length, scrollToTestimonial)}
-      </View>
+      {renderHeroSection()}
+      {renderHowWeWorkSection()}
+      {renderInspirationDesignIdeasSection()}
+      {renderFeaturedDesignersSection()}
+      {renderSpotlightSection()}
+      {renderRecentWorkSection()}
+      {renderWhatPeopleThinksSection()}
     </ScrollView>
   );
 };
@@ -657,6 +519,33 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 250,
     resizeMode: 'cover',
+  },
+  heroOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 20,
+  },
+  consultationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  consultationButtonText: {
+    color: Colors.textWhite,
+    fontSize: 16,
+    fontFamily: Fonts.semiBold,
+    marginRight: 8,
+  },
+  arrowIcon: {
+    fontSize: 20,
   },
   section: {
     paddingHorizontal: 20,

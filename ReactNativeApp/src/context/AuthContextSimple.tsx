@@ -1,4 +1,17 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import { 
+  authenticateWithFirebase, 
+  authenticateWithGoogle, 
+  authenticateWithApple,
+  logoutUser,
+  getUserProfile,
+  updateUserRole as updateUserRoleService,
+  UserProfile 
+} from '../services/authService';
+import { onAuthStateChange } from '../services/firebaseAuth';
+import { setAuthToken, getAuthToken, clearAuthData } from '../services/apiClient';
+import { completeVendorRegistration } from '../services/vendorService';
+import { onboardingStore } from '../store/onboardingStore';
 
 // Types
 export interface User {
@@ -6,9 +19,16 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
-  accountType?: 'individual' | 'business';
+  role: 'user' | 'vendor' | 'admin';
+  isVerified: boolean;
+  profileImage?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+  };
   isOnboardingComplete?: boolean;
-  profile?: any;
 }
 
 export interface AuthState {
@@ -22,14 +42,18 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   verifyOTP: (otp: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
+  updateUserRole: (role: 'vendor') => Promise<void>;
   completeOnboarding: () => Promise<void>;
   continueAsGuest: () => Promise<void>;
   clearError: () => void;
+  refreshUserProfile: () => Promise<void>;
 }
 
 // Action Types
@@ -103,30 +127,93 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 // Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper function to convert UserProfile to User
+const convertUserProfile = (profile: UserProfile): User => {
+  if (!profile || !profile.id) {
+    throw new Error('Invalid user profile data');
+  }
+  
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: profile.name,
+    phone: profile.phone,
+    role: profile.role,
+    isVerified: profile.isVerified,
+    profileImage: profile.profileImage,
+    address: profile.address,
+    isOnboardingComplete: profile.isOnboardingComplete || false, // Use backend value, default to false
+  };
+};
+
 // Provider
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+
+  // Initialize auth state on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        
+        // Check if we have a stored token
+        const token = await getAuthToken();
+        if (token) {
+          // Try to get user profile
+          const userProfile = await getUserProfile();
+          const user = convertUserProfile(userProfile);
+          dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token } });
+        } else {
+          dispatch({ type: 'SET_LOADING', payload: false });
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    };
+
+    initializeAuth();
+
+    // Listen to Firebase auth state changes (with error handling)
+    let unsubscribe: (() => void) | undefined;
+    try {
+      unsubscribe = onAuthStateChange(async (firebaseUser) => {
+        if (firebaseUser && !state.isAuthenticated) {
+          try {
+            const token = await getAuthToken();
+            if (token) {
+              const userProfile = await getUserProfile();
+              const user = convertUserProfile(userProfile);
+              dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token } });
+            }
+          } catch (error) {
+            console.error('Auth state change error:', error);
+          }
+        } else if (!firebaseUser && state.isAuthenticated) {
+          dispatch({ type: 'SET_UNAUTHENTICATED' });
+        }
+      });
+    } catch (error) {
+      console.error('Firebase auth state listener error:', error);
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
-      // Simulate API call
-      await new Promise<void>(resolve => setTimeout(resolve, 1000));
+      const { user: userProfile, firebaseUser } = await authenticateWithFirebase(email, password);
+      const user = convertUserProfile(userProfile);
       
-      // Mock response
-      const mockUser: User = {
-        id: '1',
-        email,
-        name: 'John Doe',
-        accountType: 'individual',
-        isOnboardingComplete: false,
-      };
-      const mockToken = 'mock_jwt_token';
-      
-      dispatch({ type: 'SET_AUTHENTICATED', payload: { user: mockUser, token: mockToken } });
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Login failed. Please try again.' });
+      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid } });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Login failed. Please try again.' });
     }
   };
 
@@ -134,30 +221,61 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
-      // Simulate API call
-      await new Promise<void>(resolve => setTimeout(resolve, 1000));
+      const { user: userProfile, firebaseUser } = await authenticateWithFirebase(email, password, name);
+      const user = convertUserProfile(userProfile);
       
-      // Mock response
-      const mockUser: User = {
-        id: '1',
-        email,
-        name,
-        accountType: 'individual',
-        isOnboardingComplete: false,
-      };
-      const mockToken = 'mock_jwt_token';
+      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid } });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Registration failed. Please try again.' });
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
       
-      dispatch({ type: 'SET_AUTHENTICATED', payload: { user: mockUser, token: mockToken } });
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Registration failed. Please try again.' });
+      const { user: userProfile, firebaseUser } = await authenticateWithGoogle();
+      const user = convertUserProfile(userProfile);
+      
+      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid } });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Google login failed. Please try again.' });
+    }
+  };
+
+  const loginWithApple = async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const { user: userProfile, firebaseUser } = await authenticateWithApple();
+      const user = convertUserProfile(userProfile);
+      
+      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid } });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Apple login failed. Please try again.' });
     }
   };
 
   const logout = async () => {
     try {
+      if (__DEV__) {
+        console.log('🚪 Logout initiated');
+      }
+      
+      await logoutUser();
+      
+      if (__DEV__) {
+        console.log('✅ Logout successful, clearing auth state');
+      }
+      
       dispatch({ type: 'SET_UNAUTHENTICATED' });
+      
+      if (__DEV__) {
+        console.log('✅ User should now see auth screens');
+      }
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error('❌ Error during logout:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Logout failed. Please try again.' });
     }
   };
 
@@ -211,11 +329,112 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUserRole = async (role: 'vendor') => {
+    try {
+      if (__DEV__) {
+        console.log('🎯 updateUserRole called, role:', role);
+      }
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const userProfile = await updateUserRoleService({ newRole: role });
+      if (__DEV__) {
+        console.log('✅ User role updated, profile:', JSON.stringify(userProfile, null, 2));
+      }
+      const user = convertUserProfile(userProfile);
+      
+      if (__DEV__) {
+        console.log('✅ Converted user:', JSON.stringify(user, null, 2));
+        console.log('🔍 User will have isOnboardingComplete:', user.isOnboardingComplete);
+      }
+      
+      dispatch({ type: 'UPDATE_USER', payload: user });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      
+      if (__DEV__) {
+        console.log('✅ User state updated, should show onboarding now');
+      }
+    } catch (error: any) {
+      console.error('❌ updateUserRole error:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to update user role.' });
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const refreshUserProfile = async () => {
+    try {
+      const userProfile = await getUserProfile();
+      const user = convertUserProfile(userProfile);
+      dispatch({ type: 'UPDATE_USER', payload: user });
+    } catch (error: any) {
+      console.error('Failed to refresh user profile:', error);
+    }
+  };
+
   const completeOnboarding = async () => {
     try {
+      if (__DEV__) {
+        console.log('🎯 completeOnboarding called');
+        console.log('👤 Current user role:', state.user?.role);
+      }
+      
+      // If user is a vendor, complete vendor registration with backend
+      if (state.user?.role === 'vendor') {
+        // Validate onboarding data
+        const validation = onboardingStore.validateData();
+        if (__DEV__) {
+          console.log('📋 Onboarding data validation:', validation);
+        }
+        
+        if (!validation.isValid) {
+          console.warn('⚠️ Incomplete onboarding data:', validation.missingFields);
+          // Continue anyway for now, backend will handle missing fields
+        }
+        
+        // Prepare and send data to backend
+        const formData = onboardingStore.prepareApiPayload();
+        if (__DEV__) {
+          console.log('🚀 Calling completeVendorRegistration...');
+        }
+        
+        await completeVendorRegistration(formData);
+        
+        if (__DEV__) {
+          console.log('✅ Vendor registration completed successfully');
+        }
+        
+        // Clear onboarding data
+        await onboardingStore.clearData();
+        
+        // Refresh user profile to get updated isOnboardingComplete flag from backend
+        if (__DEV__) {
+          console.log('🔄 Refreshing user profile...');
+        }
+        const userProfile = await getUserProfile();
+        const user = convertUserProfile(userProfile);
+        dispatch({ type: 'UPDATE_USER', payload: user });
+        
+        if (__DEV__) {
+          console.log('✅ User profile refreshed, isOnboardingComplete:', user.isOnboardingComplete);
+        }
+      }
+      
+      // Manually set isOnboardingComplete to true for vendors if backend didn't update it
+      if (state.user?.role === 'vendor' && state.user) {
+        dispatch({ 
+          type: 'UPDATE_USER', 
+          payload: { ...state.user, isOnboardingComplete: true } 
+        });
+      }
+      
       dispatch({ type: 'COMPLETE_ONBOARDING' });
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to complete onboarding.' });
+      
+      if (__DEV__) {
+        console.log('✅ Onboarding completed, user should now see main app');
+      }
+    } catch (error: any) {
+      console.error('❌ completeOnboarding error:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to complete onboarding.' });
+      throw error;
     }
   };
 
@@ -235,14 +454,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     ...state,
     login,
     register,
+    loginWithGoogle,
+    loginWithApple,
     logout,
     verifyOTP,
     resetPassword,
     updatePassword,
     updateUser,
+    updateUserRole,
     completeOnboarding,
     continueAsGuest,
     clearError,
+    refreshUserProfile,
   };
 
   return (

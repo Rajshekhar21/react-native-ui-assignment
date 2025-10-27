@@ -16,7 +16,7 @@ interface Props {
 }
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { login, isLoading, error, clearError, continueAsGuest } = useAuth();
+  const { login, loginWithGoogle, isLoading, error, clearError, continueAsGuest } = useAuth();
   const [formData, setFormData] = useState({
     email: 'loisbecker@gmail.com',
     password: '',
@@ -52,8 +52,13 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleGoogleAuth = () => {
-    Alert.alert('Google Auth', 'Google authentication will be implemented');
+  const handleGoogleAuth = async () => {
+    try {
+      await loginWithGoogle();
+      // Navigation will be handled by AuthContext
+    } catch (err) {
+      console.error('Google login error:', err);
+    }
   };
 
   const handleContinueAsGuest = async () => {
