@@ -1,16 +1,11 @@
-# Resolve react_native_pods.rb with node to allow for hoisting
-require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
-# Firebase & friends play nicer with modular headers
 use_modular_headers!
-# Keep frameworks STATIC (good with GoogleSignIn + fewer modular-include issues)
+
 use_frameworks! :linkage => :static
 
 target 'ReactNativeApp' do
@@ -19,56 +14,11 @@ target 'ReactNativeApp' do
   use_react_native!(
     :path => config[:reactNativePath],
     :hermes_enabled => true,
-    # :new_arch_enabled => false,
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # Single post_install hook
   post_install do |installer|
-    # Standard RN fixups
     react_native_post_install(installer)
-
-    # Loosen non-modular include errors + unify deployment target on ALL Pods targets
-    installer.pods_project.targets.each do |t|
-      t.build_configurations.each do |cfg|
-        cfg.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        cfg.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
-        # Force disable new architecture to prevent RCT_NEW_ARCH_ENABLED conflicts
-        cfg.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
-        cfg.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'RCT_NEW_ARCH_ENABLED=0'
-        
-        # Fix for Xcode 16+ compatibility
-        cfg.build_settings['WARNING_CFLAGS'] ||= ['$(inherited)']
-        cfg.build_settings['WARNING_CFLAGS'].delete('-Wshorten-64-to-32')
-        cfg.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-        
-        # Additional Xcode 16.4 compatibility fixes
-        if t.name == 'glog' || t.name == 'Yoga'
-          cfg.build_settings['GCC_WARN_64_TO_32_BIT_CONVERSION'] = 'NO'
-          cfg.build_settings['CLANG_WARN_IMPLICIT_SIGN_CONVERSION'] = 'NO'
-          cfg.build_settings['CLANG_WARN_UNGUARDED_AVAILABILITY'] = 'NO'
-        end
-
-        # Xcode 16 fix - Add this block
-        cfg.build_settings['GCC_WARN_64_TO_32_BIT_CONVERSION'] = 'NO'
-        cfg.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-        
-        # Silence warnings for problem libraries
-        if t.name == 'glog' || t.name == 'Yoga' || t.name == 'fmt'
-          cfg.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
-        end
-      end
-    end
-
-    # Also set on user project (aggregate) targets to quiet warnings
-    installer.aggregate_targets.each do |agg|
-      agg.user_project.native_targets.each do |nt|
-        nt.build_configurations.each do |cfg|
-          cfg.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
-        end
-      end
-    end
-
     __apply_Xcode_12_5_M1_post_install_workaround(installer) if defined?(__apply_Xcode_12_5_M1_post_install_workaround)
   end
 end

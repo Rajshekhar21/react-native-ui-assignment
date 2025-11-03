@@ -19,6 +19,7 @@ interface CustomInputProps {
   inputStyle?: TextStyle;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
+  accentColor?: string;
 }
 
 const CustomInput: React.FC<CustomInputProps> = ({
@@ -37,14 +38,17 @@ const CustomInput: React.FC<CustomInputProps> = ({
   inputStyle,
   rightIcon,
   onRightIconPress,
+  accentColor,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   const getInputContainerStyle = () => {
     const baseStyle: any[] = [styles.inputContainer];
+    const focusColor = accentColor || Colors.primary;
     
     if (isFocused) {
       baseStyle.push(styles.inputContainerFocused);
+      baseStyle.push({ borderColor: focusColor });
     }
     
     if (error) {
@@ -132,7 +136,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   inputContainerFocused: {
-    borderColor: Colors.primary,
     borderWidth: 2,
   },
   inputContainerError: {

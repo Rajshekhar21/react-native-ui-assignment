@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuth } from '../../context/AuthContextSimple';
@@ -22,6 +22,8 @@ const ResetPasswordScreen: React.FC<Props> = ({ navigation }) => {
     confirmPassword: '',
   });
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateForm = () => {
     const errors: {[key: string]: string} = {};
@@ -65,27 +67,41 @@ const ResetPasswordScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <AuthHeader 
         title="Set a new Password"
-        subtitle="Enter a new password to secure your account."
+        subtitle="Enter a new password to secure your account"
+        onBack={() => navigation.goBack()}
       />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
+      <View style={styles.formCard}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.formContainer}>
           <CustomInput
-            label="New password"
-            placeholder="Enter your new password"
+            placeholder="New password"
             value={formData.newPassword}
             onChangeText={(value) => handleInputChange('newPassword', value)}
-            secureTextEntry
+            secureTextEntry={!showNewPassword}
             error={validationErrors.newPassword}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                <Text style={styles.eyeIcon}>
+                  {showNewPassword ? '👁️‍🗨️' : '👁️'}
+                </Text>
+              </TouchableOpacity>
+            }
           />
 
           <CustomInput
-            label="Confirm Password"
-            placeholder="Confirm your new password"
+            placeholder="Confirm Password"
             value={formData.confirmPassword}
             onChangeText={(value) => handleInputChange('confirmPassword', value)}
-            secureTextEntry
+            secureTextEntry={!showConfirmPassword}
             error={validationErrors.confirmPassword}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                <Text style={styles.eyeIcon}>
+                  {showConfirmPassword ? '👁️‍🗨️' : '👁️'}
+                </Text>
+              </TouchableOpacity>
+            }
           />
 
           {error && (
@@ -93,7 +109,7 @@ const ResetPasswordScreen: React.FC<Props> = ({ navigation }) => {
           )}
 
           <CustomButton
-            title="Update Password"
+            title="Send Reset Email"
             onPress={handleUpdatePassword}
             loading={isLoading}
             style={styles.updateButton}
@@ -108,8 +124,9 @@ const ResetPasswordScreen: React.FC<Props> = ({ navigation }) => {
               Back to login
             </Text>
           </View>
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -119,10 +136,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  formCard: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    marginTop: -16,
+    marginHorizontal: 16,
+    paddingTop: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 8,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 30,
   },
   formContainer: {
     flex: 1,
@@ -154,6 +184,10 @@ const styles = StyleSheet.create({
     color: Colors.error,
     marginTop: 4,
     textAlign: 'center',
+  },
+  eyeIcon: {
+    fontSize: 18,
+    color: Colors.textTertiary,
   },
 });
 

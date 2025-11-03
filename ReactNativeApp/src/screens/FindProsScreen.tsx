@@ -11,13 +11,16 @@ import {
   Alert,
   Modal,
   FlatList,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Fonts } from '../styles/fonts';
-import { Colors } from '../styles/colors';
 import { getAllVendors } from '../services/vendorService';
+import FilterIcon from '../../assets/images/filter.svg';
+
+const locationIcon = require('../../assets/images/locationicon.png');
+const radiusIcon = require('../../assets/images/radius.png');
 
 const { width } = Dimensions.get('window');
 
@@ -268,50 +271,70 @@ const FindProsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerTopRow}>
-          <Text style={styles.logo}>LOGO</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('ProfileView')}>
-            <Text style={styles.profileIcon}>👤</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.headerButtons}
+        >
+          <TouchableOpacity style={[styles.filterButton, styles.allFiltersButton]}>
+            <FilterIcon width={16} height={16} style={styles.filterSvgIcon} />
+            <Text style={[styles.filterButtonText, styles.allFiltersButtonText]}>All Filters</Text>
           </TouchableOpacity>
-        </View>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.filterButton}>
-            <Text style={styles.filterIcon}>🔍</Text>
-            <Text style={styles.filterButtonText}>AllFilters</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButton} onPress={() => setLocationDropdownVisible(true)}>
-            <Text style={styles.filterIcon}>📍</Text>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setLocationDropdownVisible(true)}
+          >
+            <Image source={locationIcon} style={styles.filterIconImage} />
             <Text style={styles.filterButtonText}>{selectedLocation}</Text>
-            <Text style={styles.dropdownIcon}>▼</Text>
+            <Text style={styles.dropdownIcon}>▾</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButton} onPress={() => setPincodeDropdownVisible(true)}>
-            <Text style={styles.filterIcon}>📍</Text>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setPincodeDropdownVisible(true)}
+          >
+            <Image source={locationIcon} style={styles.filterIconImage} />
             <Text style={styles.filterButtonText}>{selectedPincode}</Text>
-            <Text style={styles.dropdownIcon}>▼</Text>
+            <Text style={styles.dropdownIcon}>▾</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButton} onPress={() => setRadiusDropdownVisible(true)}>
-            <Text style={styles.filterIcon}>📏</Text>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setRadiusDropdownVisible(true)}
+          >
+            <Image source={radiusIcon} style={styles.filterIconImage} />
             <Text style={styles.filterButtonText}>{selectedRadius}</Text>
-            <Text style={styles.dropdownIcon}>▼</Text>
+            <Text style={styles.dropdownIcon}>▾</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Active Filters */}
       {activeFilters.length > 0 && (
         <View style={styles.activeFiltersContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.activeFiltersScroll}
+          >
             {activeFilters.map((filter, index) => (
               <View key={index} style={styles.activeFilterTag}>
                 <Text style={styles.activeFilterText}>{filter}</Text>
-                <TouchableOpacity onPress={() => handleRemoveFilter(filter)}>
+                <TouchableOpacity
+                  style={styles.removeFilterButton}
+                  onPress={() => handleRemoveFilter(filter)}
+                  accessibilityLabel={`Remove ${filter}`}
+                >
                   <Text style={styles.removeFilterIcon}>✕</Text>
                 </TouchableOpacity>
               </View>
             ))}
-            <TouchableOpacity style={styles.clearAllButton} onPress={handleClearFilters}>
+            <TouchableOpacity
+              style={styles.clearAllButton}
+              onPress={handleClearFilters}
+              accessibilityRole="button"
+            >
+              <Text style={styles.clearAllIcon}>✕</Text>
               <Text style={styles.clearAllText}>Clear all filters</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -473,84 +496,102 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  logo: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
+    paddingRight: 16,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E4E7EC',
+    gap: 8,
+    shadowColor: 'rgba(0, 0, 0, 0.08)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  filterIcon: {
-    fontSize: 12,
+  allFiltersButton: {
+    backgroundColor: '#E6F3F1',
+    borderColor: '#0F766E',
+  },
+  filterSvgIcon: {
+    marginRight: 4,
   },
   filterButtonText: {
-    fontSize: 11,
-    color: '#333',
+    fontSize: 12,
+    color: '#1F2937',
     fontFamily: Fonts.regular,
   },
-  dropdownIcon: {
-    fontSize: 8,
-    color: '#666',
-    marginLeft: 2,
+  allFiltersButtonText: {
+    color: '#0F766E',
+    fontFamily: Fonts.semiBold,
   },
-  profileIcon: {
-    fontSize: 24,
-    color: '#333',
+  filterIconImage: {
+    width: 16,
+    height: 16,
+    marginRight: 6,
+    resizeMode: 'contain',
+  },
+  dropdownIcon: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 6,
   },
   activeFiltersContainer: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F1F8F6',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+  },
+  activeFiltersScroll: {
+    alignItems: 'center',
   },
   activeFilterTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    gap: 6,
+    backgroundColor: '#0F766E',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    marginRight: 10,
+    gap: 8,
   },
   activeFilterText: {
     fontSize: 12,
-    color: '#1976D2',
+    color: '#FFFFFF',
     fontFamily: Fonts.regular,
   },
+  removeFilterButton: {
+    paddingLeft: 4,
+  },
   removeFilterIcon: {
-    fontSize: 14,
-    color: '#1976D2',
+    fontSize: 12,
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   clearAllButton: {
-    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
   },
   clearAllText: {
     fontSize: 12,
-    color: '#FF3B30',
+    color: '#0F766E',
     fontFamily: Fonts.medium,
-    textDecorationLine: 'underline',
+  },
+  clearAllIcon: {
+    fontSize: 12,
+    color: '#0F766E',
+    marginRight: 4,
   },
   scrollView: {
     flex: 1,

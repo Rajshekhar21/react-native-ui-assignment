@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Fonts } from '../styles/fonts';
 import { Colors } from '../styles/colors';
 
@@ -10,6 +10,7 @@ interface ProfileHeaderProps {
   onSave?: () => void;
   showSave?: boolean;
   showEdit?: boolean;
+  showUserInfo?: boolean;
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -19,17 +20,30 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onSave,
   showSave = false,
   showEdit = true,
+  showUserInfo = true,
 }) => {
   return (
     <View style={styles.container}>
       <View style={styles.leftSection}>
-        <Text style={styles.logo}>LOGO</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Image 
+            source={require('../../assets/images/decor-mate-logo.png')}
+            style={{ width: 48, height: 48, marginRight: 4 }}
+            resizeMode="contain"
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginLeft: -10 }}>
+            <Text style={{ fontSize: 25, fontWeight: 'bold', color: Colors.textPrimary }}>ecor </Text>
+            <Text style={{ fontSize: 25, fontWeight: '600', color: Colors.textPrimary }}>Mate</Text>
+          </View>
+        </View>
       </View>
       
-      <View style={styles.centerSection}>
-        <Text style={styles.userName}>{userName}</Text>
-        <Text style={styles.userEmail}>{userEmail}</Text>
-      </View>
+      {showUserInfo && (
+        <View style={styles.centerSection}>
+          <Text style={styles.userName}>{userName}</Text>
+          <Text style={styles.userEmail}>{userEmail}</Text>
+        </View>
+      )}
       
       <View style={styles.rightSection}>
         {showEdit && (

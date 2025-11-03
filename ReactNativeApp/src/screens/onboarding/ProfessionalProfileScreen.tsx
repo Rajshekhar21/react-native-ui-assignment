@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '../../navigation/AppNavigator';
 import { useAuth } from '../../context/AuthContextSimple';
-import AuthHeader from '../../components/AuthHeader';
 import CustomButton from '../../components/CustomButton';
 import CustomDropdown from '../../components/CustomDropdown';
 import { Colors } from '../../styles/colors';
 import { Fonts } from '../../styles/fonts';
+import { onboardingStore } from '../../store/onboardingStore';
+import OnboardingProgressHeader from '../../components/OnboardingProgressHeader';
+import { updateVendorProfessionalDetails } from '../../services/vendorService';
 
 type ProfessionalProfileScreenNavigationProp = StackNavigationProp<OnboardingStackParamList, 'ProfessionalProfile'>;
 
@@ -22,6 +24,18 @@ const ProfessionalProfileScreen: React.FC<Props> = ({ navigation }) => {
     specialization: '',
     styleExpertise: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const data = onboardingStore.getData();
+    if (data?.professionalProfile) {
+      setFormData({
+        yearsOfExperience: data.professionalProfile.yearsOfExperience || '',
+        specialization: data.professionalProfile.specialization || '',
+        styleExpertise: data.professionalProfile.styleExpertise || '',
+      });
+    }
+  }, []);
 
   const experienceOptions = [
     { label: 'Less than 1 year', value: '0-1' },
@@ -52,7 +66,14 @@ const ProfessionalProfileScreen: React.FC<Props> = ({ navigation }) => {
   ];
 
   const handleContinue = async () => {
+    if (!formData.yearsOfExperience || !formData.specialization || !formData.styleExpertise) {
+      Alert.alert('Missing information', 'Please complete all fields to continue.');
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+
       await updateUser({
         profile: {
           ...user?.profile,
@@ -63,15 +84,48 @@ const ProfessionalProfileScreen: React.FC<Props> = ({ navigation }) => {
           },
         },
       });
-      
+
+      await onboardingStore.setProfessionalProfile({
+        yearsOfExperience: formData.yearsOfExperience,
+        specialization: formData.specialization,
+        styleExpertise: formData.styleExpertise,
+        categories: [],
+        projectTypes: [],
+        styles: [formData.styleExpertise],
+        languages: [],
+        businessHighlights: [],
+      });
+
+      await updateVendorProfessionalDetails({
+        experience: formData.yearsOfExperience,
+        specialization: formData.specialization,
+        style: formData.styleExpertise,
+      });
+
       navigation.navigate('Portfolio');
     } catch (error) {
       console.error('Error updating professional profile:', error);
+      Alert.alert('Failed', 'Unable to save professional details right now.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleSkip = () => {
-    navigation.navigate('Portfolio');
+    if (isSubmitting) {
+      return;
+    }
+
+    const fallback = {
+      yearsOfExperience: formData.yearsOfExperience || experienceOptions[0].value,
+      specialization: formData.specialization || specializationOptions[0].value,
+      styleExpertise: formData.styleExpertise || styleExpertiseOptions[0].value,
+    };
+
+    setFormData(fallback);
+    setTimeout(() => {
+      handleContinue();
+    }, 0);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -79,20 +133,22 @@ const ProfessionalProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <AuthHeader 
+    <View style={styles.screen}>
+      <OnboardingProgressHeader
         title="Professional Profile"
-        subtitle="Tell us about your professional background"
+        subtitle="Tell us about your expertise so we can match you with the right clients."
+        step={3}
+        totalSteps={5}
       />
-      
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
+      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.formCard}>
           <CustomDropdown
             label="Years of Experience"
             placeholder="Select your experience level"
             options={experienceOptions}
             selectedValue={formData.yearsOfExperience}
             onValueChange={(value) => handleInputChange('yearsOfExperience', value)}
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomDropdown
@@ -101,6 +157,7 @@ const ProfessionalProfileScreen: React.FC<Props> = ({ navigation }) => {
             options={specializationOptions}
             selectedValue={formData.specialization}
             onValueChange={(value) => handleInputChange('specialization', value)}
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomDropdown
@@ -109,21 +166,33 @@ const ProfessionalProfileScreen: React.FC<Props> = ({ navigation }) => {
             options={styleExpertiseOptions}
             selectedValue={formData.styleExpertise}
             onValueChange={(value) => handleInputChange('styleExpertise', value)}
+            accentColor={Colors.onboardingAccent}
           />
+        </View>
 
-          <View style={styles.navigationContainer}>
-            <CustomButton
-              title="Back"
-              onPress={() => navigation.goBack()}
-              variant="secondary"
-              style={styles.backButton}
-            />
-            <CustomButton
-              title="Skip & Save"
-              onPress={handleSkip}
-              style={styles.skipButton}
-            />
-          </View>
+        <View style={styles.footerActions}>
+          <CustomButton
+            title="Back"
+            onPress={() => navigation.goBack()}
+            variant="outline"
+            style={[styles.outlineButton, { borderColor: Colors.onboardingAccent }]}
+            textStyle={{ color: Colors.onboardingAccent }}
+          />
+          <CustomButton
+            title={isSubmitting ? 'Saving...' : 'Skip & Save'}
+            onPress={handleSkip}
+            variant="secondary"
+            style={styles.skipButton}
+            textStyle={{ color: Colors.onboardingAccent }}
+            disabled={isSubmitting}
+          />
+          <CustomButton
+            title={isSubmitting ? 'Saving...' : 'Continue'}
+            onPress={handleContinue}
+            variant="onboarding"
+            style={styles.primaryButton}
+            disabled={isSubmitting}
+          />
         </View>
       </ScrollView>
     </View>
@@ -131,31 +200,44 @@ const ProfessionalProfileScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  formCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 16,
+    elevation: 3,
+    gap: 16,
+  },
+  footerActions: {
+    marginTop: 28,
+    gap: 12,
+  },
+  outlineButton: {
+    borderRadius: 14,
+    borderWidth: 1.5,
     backgroundColor: Colors.background,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 30,
-  },
-  formContainer: {
-    flex: 1,
-  },
-  navigationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: 20,
-    marginTop: 20,
-  },
-  backButton: {
-    flex: 1,
-    marginRight: 8,
-  },
   skipButton: {
-    flex: 2,
-    marginLeft: 8,
+    borderRadius: 14,
+    backgroundColor: Colors.onboardingAccentLight,
+    borderWidth: 0,
+  },
+  primaryButton: {
+    borderRadius: 14,
   },
 });
 

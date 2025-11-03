@@ -17,6 +17,7 @@ interface CustomDropdownProps {
   error?: string;
   disabled?: boolean;
   style?: any;
+  accentColor?: string;
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -28,10 +29,12 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   error,
   disabled = false,
   style,
+  accentColor,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedOption = options.find(option => option.value === selectedValue);
+  const highlightColor = accentColor || Colors.primary;
 
   const handleSelect = (value: string) => {
     onValueChange(value);
@@ -40,19 +43,19 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
   const getDropdownStyle = () => {
     const baseStyle: any[] = [styles.dropdown];
-    
+
     if (error) {
       baseStyle.push(styles.dropdownError);
     }
-    
+
     if (disabled) {
       baseStyle.push(styles.dropdownDisabled);
     }
-    
+
     if (style) {
       baseStyle.push(style);
     }
-    
+
     return baseStyle;
   };
 
@@ -94,13 +97,16 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.option,
-                    selectedValue === item.value && styles.selectedOption
+                    selectedValue === item.value && [
+                      styles.selectedOption,
+                      { backgroundColor: Colors.onboardingAccentLight },
+                    ],
                   ]}
                   onPress={() => handleSelect(item.value)}
                 >
                   <Text style={[
                     styles.optionText,
-                    selectedValue === item.value && styles.selectedOptionText
+                    selectedValue === item.value && [styles.selectedOptionText, { color: highlightColor }]
                   ]}>
                     {item.label}
                   </Text>
@@ -192,9 +198,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
   },
-  selectedOption: {
-    backgroundColor: Colors.backgroundSecondary,
-  },
+  selectedOption: {},
   optionText: {
     fontSize: 16,
     fontFamily: Fonts.regular,

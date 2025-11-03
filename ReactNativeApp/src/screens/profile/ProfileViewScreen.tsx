@@ -9,6 +9,7 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Fonts } from '../../styles/fonts';
@@ -57,27 +58,20 @@ const ProfileViewScreen: React.FC<Props> = ({ navigation }) => {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
-  // Mock data - in real app, fetch from API
+  // Mock data - using fixed data to match the UI design
   useEffect(() => {
-    const isVendor = user?.role === 'vendor';
     const mockProfile: UserProfile = {
       id: '1',
-      fullName: user?.name || 'Akash Sharma',
-      email: user?.email || 'akash@gmail.com',
-      phone: user?.phone || '81265 28355',
-      isVerified: user?.isVerified || false,
-      professionalProfile: isVendor ? {
+      fullName: 'Akash Sharma',
+      email: 'akash@gmail.com',
+      phone: '81265 28355',
+      isVerified: true,
+      professionalProfile: {
         roles: ['interior', 'architect', 'contractor'],
         rating: 4.8,
         reviewCount: 38,
         location: 'Dehradun, India',
         description: 'Our dream home was designed as beautifully as we pictured it - that\'s what\'s unique about Decor mate experience.',
-      } : {
-        roles: [],
-        rating: 0,
-        reviewCount: 0,
-        location: '',
-        description: '',
       },
       portfolio: [
         {
@@ -85,8 +79,8 @@ const ProfileViewScreen: React.FC<Props> = ({ navigation }) => {
           name: 'Modern Open Kitchen Design with Granite Island',
           description: 'Contemporary kitchen with granite island and modern appliances',
           location: 'Dehradun, Uttarakhand',
-          rating: 4.79,
-          reviewCount: 172,
+          rating: 4.96,
+          reviewCount: 672,
           image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
         },
         {
@@ -107,10 +101,19 @@ const ProfileViewScreen: React.FC<Props> = ({ navigation }) => {
           reviewCount: 156,
           image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=300&fit=crop',
         },
+        {
+          id: '4',
+          name: 'Contemporary Office Space',
+          description: 'Modern office design with open workspace',
+          location: 'Bangalore, Karnataka',
+          rating: 4.8,
+          reviewCount: 234,
+          image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop',
+        },
       ],
     };
     setProfile(mockProfile);
-  }, [user]);
+  }, []);
 
   const handleEditProfile = () => {
     navigation.navigate('ProfileEdit');
@@ -167,16 +170,17 @@ const ProfileViewScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <ProfileHeader
+        {/* <ProfileHeader
           userName={profile.fullName}
           userEmail={profile.email}
           onEdit={handleEditProfile}
-          showEdit={true}
+          showEdit={false}
           showSave={false}
-        />
+          showUserInfo={false}
+        /> */}
 
         {/* Hero Image */}
         <View style={styles.heroSection}>
@@ -188,42 +192,61 @@ const ProfileViewScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* User Info Card */}
         <View style={styles.userInfoCard}>
-          <View style={styles.nameContainer}>
-            <Text style={styles.userName}>{profile.fullName}</Text>
-            {profile.isVerified && (
-              <Text style={styles.verifiedIcon}>✓</Text>
-            )}
+          <View style={styles.topRow}>
+            <View style={styles.nameContainer}>
+              <Text style={styles.userNameLarge}>{profile.fullName}</Text>
+              {profile.isVerified && (
+                <Text style={styles.verifiedIcon}>✓</Text>
+              )}
+            </View>
+            <TouchableOpacity style={styles.smallLogoutButton} onPress={handleLogout}>
+              <Text style={styles.smallLogoutText}>Logout</Text>
+            </TouchableOpacity>
           </View>
-          
-          {user?.role === 'vendor' && (
-            <>
-              <Text style={styles.description}>
-                {profile.professionalProfile.description}
-              </Text>
 
-              <ProfessionalTags roles={profile.professionalProfile.roles} />
+          <Text style={styles.descriptionLarge}>
+            {profile.professionalProfile.description}
+          </Text>
 
-              <View style={styles.ratingContainer}>
-                <Text style={styles.rating}>
-                  {profile.professionalProfile.rating} {profile.professionalProfile.reviewCount} Review
-                </Text>
-                <TouchableOpacity style={styles.reviewButton} onPress={handleWriteReview}>
-                  <Text style={styles.reviewButtonIcon}>✈️</Text>
-                  <Text style={styles.reviewButtonText}>Write a Review</Text>
-                </TouchableOpacity>
-              </View>
+          <ProfessionalTags roles={profile.professionalProfile.roles} />
 
-              <View style={styles.locationContainer}>
-                <Text style={styles.locationIcon}>📍</Text>
-                <Text style={styles.location}>{profile.professionalProfile.location}</Text>
-              </View>
-            </>
-          )}
+          <View style={styles.ratingRow}>
+            <Text style={styles.rowIcon}>🏆</Text>
+            <Text style={styles.ratingText}>{profile.professionalProfile.reviewCount} Review</Text>
+            <TouchableOpacity style={styles.writeReviewButton} onPress={handleWriteReview}>
+              <Text style={styles.writeReviewText}>Write a Review</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.shareButton}>
+              <Text style={styles.shareIcon}>↗</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.locationRow}>
+            <Text style={styles.rowIcon}>📍</Text>
+            <Text style={styles.locationText}>{profile.professionalProfile.location}</Text>
+          </View>
         </View>
 
-        {/* Portfolio Section - Only show for vendors */}
-        {user?.role === 'vendor' && (
-          <View style={styles.portfolioSection}>
+        {/* Send Enquiry Button */}
+        <View style={styles.enquiryContainer}>
+          <TouchableOpacity style={styles.enquiryButton}>
+            <Text style={styles.enquiryButtonText}>Send Enquiry</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* About Section */}
+        <View style={styles.aboutSection}>
+          <Text style={styles.aboutTitle}>About Us</Text>
+          <Text style={styles.aboutText}>
+            We create interiors that seamlessly blend functionality with elegance where every detail is thoughtfully
+            designed to inspire, comfort, and elevate your lifestyle. Our approach goes beyond aesthetics; we craft
+            spaces that are not only visually stunning but also practical, harmonious, and deeply personal, ensuring
+            your home feels both inspiring and truly livable.
+          </Text>
+        </View>
+
+        {/* Portfolio Section */}
+        <View style={styles.portfolioSection}>
           <View style={styles.portfolioHeader}>
             <Text style={styles.portfolioTitle}>Portfolio</Text>
             <TouchableOpacity style={styles.addProjectButton} onPress={handleAddProject}>
@@ -233,24 +256,19 @@ const ProfileViewScreen: React.FC<Props> = ({ navigation }) => {
 
           <View style={styles.portfolioGrid}>
             {profile.portfolio.map((project) => (
-              <PortfolioCard
-                key={project.id}
-                project={project}
-                onPress={() => handleProjectPress(project.id)}
-              />
+              <View key={project.id} style={styles.portfolioItem}>
+                <PortfolioCard
+                  project={project}
+                  onPress={() => handleProjectPress(project.id)}
+                />
+              </View>
             ))}
           </View>
         </View>
-        )}
 
-        {/* Logout Button */}
-        <View style={styles.logoutSection}>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
+        {null}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -287,6 +305,11 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 20,
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   nameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -294,6 +317,12 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 20,
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+    marginRight: 8,
+  },
+  userNameLarge: {
+    fontSize: 28,
     fontFamily: Fonts.bold,
     color: Colors.textPrimary,
     marginRight: 8,
@@ -308,6 +337,13 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
+  },
+  descriptionLarge: {
+    fontSize: 16,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    lineHeight: 24,
+    marginBottom: 16,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -350,6 +386,99 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     color: Colors.textSecondary,
   },
+  inlineActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+  },
+  smallLogoutButton: {
+    borderColor: '#FF3B30',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#FFF5F4',
+  },
+  smallLogoutText: {
+    color: '#FF3B30',
+    fontSize: 12,
+    fontFamily: Fonts.semiBold,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  rowIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Colors.textPrimary,
+    marginRight: 12,
+  },
+  writeReviewButton: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  writeReviewText: {
+    fontSize: 12,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textPrimary,
+  },
+  shareButton: {
+    marginLeft: 'auto',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  shareIcon: {
+    fontSize: 16,
+    color: Colors.textPrimary,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationText: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+  },
+  enquiryContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  enquiryButton: {
+    backgroundColor: '#FF6F61',
+    borderRadius: 16,
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  enquiryButtonText: {
+    color: Colors.textWhite,
+    fontSize: 20,
+    fontFamily: Fonts.semiBold,
+  },
+  aboutSection: {
+    paddingHorizontal: 20,
+    marginBottom: 60,
+  },
+  aboutTitle: {
+    fontSize: 24,
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+    marginBottom: 12,
+  },
+  aboutText: {
+    fontSize: 16,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    lineHeight: 26,
+  },
   portfolioSection: {
     paddingHorizontal: 20,
     marginBottom: 80, // Space for bottom navigation
@@ -377,7 +506,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.semiBold,
   },
   portfolioGrid: {
-    // Grid layout will be handled by FlatList or similar
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  portfolioItem: {
+    width: '48%',
+    marginBottom: 16,
   },
   logoutSection: {
     paddingHorizontal: 20,

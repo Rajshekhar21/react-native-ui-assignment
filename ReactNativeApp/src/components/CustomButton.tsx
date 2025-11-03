@@ -6,7 +6,7 @@ import { Fonts } from '../styles/fonts';
 interface CustomButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'google';
+  variant?: 'primary' | 'secondary' | 'google' | 'outline' | 'onboarding';
   disabled?: boolean;
   loading?: boolean;
   style?: ViewStyle;
@@ -84,6 +84,9 @@ const styles = StyleSheet.create({
   primary: {
     backgroundColor: Colors.primary,
   },
+  onboarding: {
+    backgroundColor: Colors.onboardingAccent,
+  },
   secondary: {
     backgroundColor: Colors.background,
     borderWidth: 1,
@@ -93,6 +96,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  outline: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
   disabled: {
     opacity: 0.6,
@@ -104,12 +112,18 @@ const styles = StyleSheet.create({
   primaryText: {
     color: Colors.textWhite,
   },
+  onboardingText: {
+    color: Colors.textWhite,
+  },
   secondaryText: {
     color: Colors.primary,
   },
   googleText: {
     color: Colors.textPrimary,
     marginLeft: 8,
+  },
+  outlineText: {
+    color: Colors.primary,
   },
   disabledText: {
     opacity: 0.6,

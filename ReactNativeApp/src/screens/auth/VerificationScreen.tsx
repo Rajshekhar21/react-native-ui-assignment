@@ -66,9 +66,11 @@ const VerificationScreen: React.FC<Props> = ({ navigation }) => {
       <AuthHeader 
         title="Verification Code"
         subtitle="We have sent the verification code to your mobile number"
+        onBack={() => navigation.goBack()}
       />
       
-      <View style={styles.content}>
+      <View style={styles.formCard}>
+        <View style={styles.content}>
         <View style={styles.instructionContainer}>
           <Text style={styles.instructionText}>
             Please enter the 4-digit code sent to your mobile number
@@ -99,6 +101,7 @@ const VerificationScreen: React.FC<Props> = ({ navigation }) => {
           disabled={otp.length !== 4}
           style={styles.loginButton}
         />
+        </View>
       </View>
     </View>
   );
@@ -109,10 +112,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  formCard: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    marginTop: -16,
+    marginHorizontal: 16,
+    paddingTop: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 8,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 30,
     justifyContent: 'center',
   },
   instructionContainer: {

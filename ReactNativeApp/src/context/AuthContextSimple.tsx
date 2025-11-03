@@ -10,7 +10,6 @@ import {
 } from '../services/authService';
 import { onAuthStateChange } from '../services/firebaseAuth';
 import { setAuthToken, getAuthToken, clearAuthData } from '../services/apiClient';
-import { completeVendorRegistration } from '../services/vendorService';
 import { onboardingStore } from '../store/onboardingStore';
 
 // Types
@@ -37,6 +36,7 @@ export interface AuthState {
   user: User | null;
   token: string | null;
   error: string | null;
+  authProvider: 'email' | 'google' | 'apple' | null;
 }
 
 export interface AuthContextType extends AuthState {
@@ -59,7 +59,7 @@ export interface AuthContextType extends AuthState {
 // Action Types
 type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_AUTHENTICATED'; payload: { user: User; token: string } }
+  | { type: 'SET_AUTHENTICATED'; payload: { user: User; token: string; authProvider: 'email' | 'google' | 'apple' } }
   | { type: 'SET_UNAUTHENTICATED' }
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'CLEAR_ERROR' }
@@ -74,6 +74,7 @@ const initialState: AuthState = {
   user: null,
   token: null,
   error: null,
+  authProvider: null,
 };
 
 // Reducer
@@ -89,6 +90,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         user: action.payload.user,
         token: action.payload.token,
         error: null,
+        authProvider: action.payload.authProvider,
       };
     case 'SET_UNAUTHENTICATED':
       return {
@@ -98,6 +100,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         user: null,
         token: null,
         error: null,
+        authProvider: null,
       };
     case 'SET_ERROR':
       return { ...state, error: action.payload, isLoading: false };
@@ -118,6 +121,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         user: null,
         token: null,
         error: null,
+        authProvider: null,
       };
     default:
       return state;
@@ -156,13 +160,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
         
+        await onboardingStore.initialize();
+
         // Check if we have a stored token
         const token = await getAuthToken();
         if (token) {
           // Try to get user profile
           const userProfile = await getUserProfile();
           const user = convertUserProfile(userProfile);
-          dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token } });
+          dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token, authProvider: 'email' } });
         } else {
           dispatch({ type: 'SET_LOADING', payload: false });
         }
@@ -211,7 +217,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { user: userProfile, firebaseUser } = await authenticateWithFirebase(email, password);
       const user = convertUserProfile(userProfile);
       
-      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid } });
+      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid, authProvider: 'email' } });
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message || 'Login failed. Please try again.' });
     }
@@ -224,7 +230,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { user: userProfile, firebaseUser } = await authenticateWithFirebase(email, password, name);
       const user = convertUserProfile(userProfile);
       
-      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid } });
+      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid, authProvider: 'email' } });
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message || 'Registration failed. Please try again.' });
     }
@@ -237,7 +243,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { user: userProfile, firebaseUser } = await authenticateWithGoogle();
       const user = convertUserProfile(userProfile);
       
-      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid } });
+      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid, authProvider: 'google' } });
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message || 'Google login failed. Please try again.' });
     }
@@ -250,7 +256,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { user: userProfile, firebaseUser } = await authenticateWithApple();
       const user = convertUserProfile(userProfile);
       
-      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid } });
+      dispatch({ type: 'SET_AUTHENTICATED', payload: { user, token: firebaseUser.uid, authProvider: 'apple' } });
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message || 'Apple login failed. Please try again.' });
     }
@@ -372,65 +378,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const completeOnboarding = async () => {
     try {
-      if (__DEV__) {
-        console.log('🎯 completeOnboarding called');
-        console.log('👤 Current user role:', state.user?.role);
-      }
-      
-      // If user is a vendor, complete vendor registration with backend
-      if (state.user?.role === 'vendor') {
-        // Validate onboarding data
-        const validation = onboardingStore.validateData();
-        if (__DEV__) {
-          console.log('📋 Onboarding data validation:', validation);
-        }
-        
-        if (!validation.isValid) {
-          console.warn('⚠️ Incomplete onboarding data:', validation.missingFields);
-          // Continue anyway for now, backend will handle missing fields
-        }
-        
-        // Prepare and send data to backend
-        const formData = onboardingStore.prepareApiPayload();
-        if (__DEV__) {
-          console.log('🚀 Calling completeVendorRegistration...');
-        }
-        
-        await completeVendorRegistration(formData);
-        
-        if (__DEV__) {
-          console.log('✅ Vendor registration completed successfully');
-        }
-        
-        // Clear onboarding data
-        await onboardingStore.clearData();
-        
-        // Refresh user profile to get updated isOnboardingComplete flag from backend
-        if (__DEV__) {
-          console.log('🔄 Refreshing user profile...');
-        }
-        const userProfile = await getUserProfile();
-        const user = convertUserProfile(userProfile);
-        dispatch({ type: 'UPDATE_USER', payload: user });
-        
-        if (__DEV__) {
-          console.log('✅ User profile refreshed, isOnboardingComplete:', user.isOnboardingComplete);
-        }
-      }
-      
-      // Manually set isOnboardingComplete to true for vendors if backend didn't update it
-      if (state.user?.role === 'vendor' && state.user) {
-        dispatch({ 
-          type: 'UPDATE_USER', 
-          payload: { ...state.user, isOnboardingComplete: true } 
-        });
-      }
-      
+      await onboardingStore.clearData();
+      await refreshUserProfile();
       dispatch({ type: 'COMPLETE_ONBOARDING' });
-      
-      if (__DEV__) {
-        console.log('✅ Onboarding completed, user should now see main app');
-      }
     } catch (error: any) {
       console.error('❌ completeOnboarding error:', error);
       dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to complete onboarding.' });

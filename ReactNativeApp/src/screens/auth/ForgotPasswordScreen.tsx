@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuth } from '../../context/AuthContextSimple';
 import AuthHeader from '../../components/AuthHeader';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
+import OTPInput from '../../components/OTPInput';
 import { Colors } from '../../styles/colors';
 import { Fonts } from '../../styles/fonts';
 
@@ -18,8 +19,11 @@ interface Props {
 const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
   const { resetPassword, isLoading, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [currentStep, setCurrentStep] = useState<'email' | 'otp' | 'success'>('email');
   const [validationError, setValidationError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateEmail = () => {
     if (!email) {
@@ -39,34 +43,58 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
     
     clearError();
     try {
-      await resetPassword(email);
-      setEmailSent(true);
+      // Simulate sending reset email
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 1000));
+      setCurrentStep('otp');
     } catch (err) {
       console.error('Password reset error:', err);
     }
+  };
+
+  const handleOTPComplete = async (otpValue: string) => {
+    setOtp(otpValue);
+    clearError();
+    try {
+      // Simulate OTP verification
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 1000));
+      setCurrentStep('success');
+    } catch (err) {
+      console.error('OTP verification error:', err);
+    }
+  };
+
+  const handlePasswordChanged = () => {
+    Alert.alert(
+      'Success',
+      'Your password is changed',
+      [
+        {
+          text: 'Back to login',
+          onPress: () => navigation.navigate('Login')
+        }
+      ]
+    );
   };
 
   const handleBackToLogin = () => {
     navigation.navigate('Login');
   };
 
-  if (emailSent) {
+  if (currentStep === 'success') {
     return (
       <View style={styles.container}>
         <AuthHeader 
-          title="Forgot your Password?"
-          subtitle="No worries, we'll send you a reset link. Enter your email and we'll send you a reset link."
+          title="Forgot Your Password?" 
+          subtitle="Password reset completed"
+          onBack={() => navigation.goBack()}
         />
         
-        <View style={styles.content}>
-          <View style={styles.successContainer}>
-            <View style={styles.successBanner}>
-              <Text style={styles.successText}>
-                A reset link has been sent to your email.
-              </Text>
+        <View style={styles.formCard}>
+          <View style={styles.content}>
+            <View style={styles.successContainer}>
               <CustomButton
                 title="Back to Login"
-                onPress={handleBackToLogin}
+                onPress={handlePasswordChanged}
                 style={styles.backToLoginButton}
               />
             </View>
@@ -76,22 +104,75 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
     );
   }
 
+  if (currentStep === 'otp') {
+    return (
+      <View style={styles.container}>
+        <AuthHeader 
+          title="Verification Code"
+          subtitle="We have sent the verification code to your email"
+          onBack={() => setCurrentStep('email')}
+        />
+        
+        <View style={styles.formCard}>
+          <View style={styles.content}>
+            <View style={styles.instructionContainer}>
+              <Text style={styles.instructionText}>
+                Please enter the 4-digit code sent to your email
+              </Text>
+            </View>
+
+            <OTPInput
+              length={4}
+              onComplete={handleOTPComplete}
+              error={error || undefined}
+              disabled={isLoading}
+            />
+
+            <CustomButton
+              title="Verify OTP"
+              onPress={() => handleOTPComplete(otp)}
+              loading={isLoading}
+              disabled={otp.length !== 4}
+              style={styles.verifyButton}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <AuthHeader 
-        title="Forgot your Password?"
-        subtitle="No worries, we'll send you a reset link. Enter your email and we'll send you a reset link."
+        title="Forgot Password"
+        subtitle="No worries enter your email and we'll send you a reset link"
+        onBack={() => navigation.goBack()}
       />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
+      <View style={styles.formCard}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.formContainer}>
           <CustomInput
-            label="Enter Registered Email"
-            placeholder="Enter your email address"
+            placeholder="Enter Registered Email"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             error={validationError}
+          />
+
+          <CustomInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            error={validationError}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Text style={styles.eyeIcon}>
+                  {showPassword ? '👁️‍🗨️' : '👁️'}
+                </Text>
+              </TouchableOpacity>
+            }
           />
 
           {error && (
@@ -114,8 +195,9 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
               Back to login
             </Text>
           </View>
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -125,10 +207,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  formCard: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    marginTop: -16,
+    marginHorizontal: 16,
+    paddingTop: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 8,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 30,
   },
   formContainer: {
     flex: 1,
@@ -184,6 +279,24 @@ const styles = StyleSheet.create({
   backToLoginButton: {
     backgroundColor: Colors.success,
     minWidth: 150,
+  },
+  instructionContainer: {
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  instructionText: {
+    fontSize: 16,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  verifyButton: {
+    marginTop: 20,
+  },
+  eyeIcon: {
+    fontSize: 18,
+    color: Colors.textTertiary,
   },
 });
 

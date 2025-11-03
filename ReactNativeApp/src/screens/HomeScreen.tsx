@@ -9,7 +9,9 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
+import FilterIcon from '../../assets/images/filter.svg';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Fonts } from '../styles/fonts';
@@ -34,22 +36,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [recentWork, setRecentWork] = useState<RecentWork[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [activeCategory, setActiveCategory] = useState('Bedroom Design');
-  const [currentDesignerIndex, setCurrentDesignerIndex] = useState(0);
   const [currentInspirationIndex, setCurrentInspirationIndex] = useState(0);
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
-  const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
 
-  const designerScrollRef = useRef<ScrollView>(null);
   const inspirationScrollRef = useRef<ScrollView>(null);
   const projectScrollRef = useRef<ScrollView>(null);
-  const testimonialScrollRef = useRef<ScrollView>(null);
-
-  // Mock testimonials data
-  const testimonials = [
-    { id: '1', name: 'Akash', role: 'UI/UX Designer', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
-    { id: '2', name: 'Priya', role: 'Product Manager', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
-    { id: '3', name: 'Rajesh', role: 'Software Engineer', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
-  ];
 
   const categories = ['Bedroom Design', 'Kitchen Design', 'Living Room', 'Office'];
 
@@ -93,20 +84,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const scrollToDesigner = (index: number) => {
-    if (designerScrollRef.current) {
-      designerScrollRef.current.scrollTo({
-        x: index * (width - 40),
-        animated: true,
-      });
-    }
-    setCurrentDesignerIndex(index);
-  };
-
   const scrollToInspiration = (index: number) => {
     if (inspirationScrollRef.current) {
       inspirationScrollRef.current.scrollTo({
-        x: index * (width - 80),
+        x: index * (width - 40),
         animated: true,
       });
     }
@@ -148,11 +129,15 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         source={{ uri: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=400&fit=crop' }}
         style={styles.heroImage}
       />
-      <View style={styles.heroOverlay}>
-        <TouchableOpacity style={styles.consultationButton} onPress={handleBookConsultation}>
-          <Text style={styles.consultationButtonText}>Book Your Consultation Now</Text>
-          <Text style={styles.arrowIcon}>→</Text>
-        </TouchableOpacity>
+      <View style={styles.heroContentOverlay}>
+        <View style={styles.heroTextContainer}>
+          <Text style={styles.heroTitle}>Find the Right Interior Designer for Your Home</Text>
+          <Text style={styles.heroSubtitle}>Your dream home starts with the right designer let's find yours</Text>
+          <TouchableOpacity style={styles.consultationButton} onPress={handleBookConsultation}>
+            <Text style={styles.consultationButtonText}>Book Your Consultation Now</Text>
+            <Text style={styles.arrowIcon}>→</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -165,24 +150,56 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       </Text>
       <View style={styles.processGrid}>
         <View style={styles.processCard}>
-          <Text style={styles.processIcon}>��</Text>
-          <Text style={styles.processTitle}>Post Your Requirement</Text>
-          <Text style={styles.processSubtitle}>Share your project details & budget</Text>
+          <View style={styles.processIconContainer}>
+            <Image 
+              source={require('../../assets/images/Document.png')} 
+              style={styles.processIconImage}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.processCardContent}>
+            <Text style={styles.processTitle}>Post Your Requirement</Text>
+            <Text style={styles.processSubtitle}>Share your project details & budget</Text>
+          </View>
         </View>
         <View style={styles.processCard}>
-          <Text style={styles.processIcon}>��</Text>
-          <Text style={styles.processTitle}>Get Matched</Text>
-          <Text style={styles.processSubtitle}>Receive 2-3 verified professional matches</Text>
+          <View style={styles.processIconContainer}>
+            <Image 
+              source={require('../../assets/images/puzzle.png')} 
+              style={styles.processIconImage}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.processCardContent}>
+            <Text style={styles.processTitle}>Get Matched</Text>
+            <Text style={styles.processSubtitle}>Receive 2-3 verified professional matches</Text>
+          </View>
         </View>
         <View style={styles.processCard}>
-          <Text style={styles.processIcon}>��</Text>
-          <Text style={styles.processTitle}>Compare & Connect</Text>
-          <Text style={styles.processSubtitle}>Review profiles, portfolios & quotes</Text>
+          <View style={styles.processIconContainer}>
+            <Image 
+              source={require('../../assets/images/link.png')} 
+              style={styles.processIconImage}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.processCardContent}>
+            <Text style={styles.processTitle}>Compare & Connect</Text>
+            <Text style={styles.processSubtitle}>Review profiles, portfolios & quotes</Text>
+          </View>
         </View>
         <View style={styles.processCard}>
-          <Text style={[styles.processIcon, styles.redIcon]}>��</Text>
-          <Text style={styles.processTitle}>Start Your Project</Text>
-          <Text style={styles.processSubtitle}>Begin your dream transformation</Text>
+          <View style={[styles.processIconContainer, styles.processIconContainerRed]}>
+            <Image 
+              source={require('../../assets/images/shuttle.png')} 
+              style={styles.processIconImage}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.processCardContent}>
+            <Text style={styles.processTitle}>Start Your Project</Text>
+            <Text style={styles.processSubtitle}>Begin your dream transformation</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -194,6 +211,35 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.sectionSubtitle}>
         Ideas that inspire your next creative project and elevate every design.
       </Text>
+      
+      {/* Category Tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoryTabsScroll}
+        contentContainerStyle={styles.categoryTabsContainer}
+      >
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryTab,
+              activeCategory === category && styles.categoryTabActive,
+            ]}
+            onPress={() => setActiveCategory(category)}
+          >
+            <Text
+              style={[
+                styles.categoryTabText,
+                activeCategory === category && styles.categoryTabTextActive,
+              ]}
+            >
+              {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       <ScrollView
         ref={inspirationScrollRef}
         horizontal
@@ -201,6 +247,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleInspirationScroll}
         style={styles.carouselContainer}
+        contentContainerStyle={styles.inspirationCarouselContent}
       >
         {inspirationProjects.map((project, index) => (
           <TouchableOpacity 
@@ -216,78 +263,89 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         ))}
       </ScrollView>
       {renderPaginationDots(currentInspirationIndex, inspirationProjects.length, scrollToInspiration)}
-      
-      <TouchableOpacity 
-        style={styles.browseCategoriesButton}
-        onPress={() => navigation.navigate('CategoryList')}
-      >
-        <Text style={styles.browseCategoriesButtonText}>Browse All Categories</Text>
-      </TouchableOpacity>
     </View>
   );
 
-  const renderFeaturedDesignersSection = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Featured Designers</Text>
-      <Text style={styles.sectionSubtitle}>
-        Meet the talented designers shaping trends and creating exceptional spaces.
-      </Text>
-      <ScrollView
-        ref={designerScrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleDesignerScroll}
-        style={styles.carouselContainer}
-        contentContainerStyle={styles.designerCarouselContent}
-      >
-        {designers.map((designer, index) => (
-          <View key={designer.id} style={styles.designerCard}>
-            <Image source={{ uri: designer.profileImage || designer.avatar }} style={styles.designerAvatar} />
-            <Text style={styles.designerName}>{designer.name}</Text>
-            <Text style={styles.designerProfession}>
-              {designer.profession || 'Designer'} | Exp. {designer.experienceYears || designer.experience || 0} years
-            </Text>
-            <View style={styles.designerLocation}>
-              <Text style={styles.locationIcon}>📍</Text>
-              <Text style={styles.designerLocationText}>
-                {typeof designer.location === 'string' 
-                  ? designer.location 
-                  : `${(designer.location as any)?.city || 'Unknown'}${(designer.location as any)?.area ? ', ' + (designer.location as any).area : ''}`}
-              </Text>
+  const renderFeaturedDesignersSection = () => {
+    const displayedDesigners = designers.slice(0, 5);
+    const hasMoreDesigners = designers.length > 5;
+
+    const getSurname = (fullName: string) => {
+      const parts = fullName.trim().split(' ');
+      return parts.length > 1 ? parts[parts.length - 1] : fullName;
+    };
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Featured Designers</Text>
+        <Text style={styles.sectionSubtitle}>
+          Meet the talented designers shaping trends and creating exceptional spaces.
+        </Text>
+        <View style={styles.designersContainer}>
+          {displayedDesigners.map((designer) => (
+            <View key={designer.id} style={styles.designerCardVertical}>
+              <View style={styles.designerImageContainer}>
+                {(designer.profileImage || designer.avatar) ? (
+                  <Image 
+                    source={{ uri: designer.profileImage || designer.avatar }} 
+                    style={styles.designerImage}
+                  />
+                ) : (
+                  <View style={styles.designerImagePlaceholder}>
+                    <Text style={styles.designerImageInitials}>
+                      {(designer.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.designerCardContent}>
+                <Text style={styles.designerCardName}>{getSurname(designer.name)}</Text>
+                <Text style={styles.designerCardExperience}>
+                  {designer.profession || 'Interior Designer'} • {designer.experienceYears || designer.experience || 0} years exp.
+                </Text>
+                <Text style={styles.designerCardDescription} numberOfLines={2}>
+                  {designer.shortDescription || designer.description || 'Blending creativity and practicality to design interiors that inspire.'}
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.designerProfileButton}
+                onPress={() => handleDesignerProfile(designer.id)}
+              >
+                <Text style={styles.designerProfileButtonText}>Profile →</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.designerDescription}>{designer.shortDescription || designer.description}</Text>
-            <TouchableOpacity 
-              style={styles.profileButton}
-              onPress={() => handleDesignerProfile(designer.id)}
-            >
-              <Text style={styles.profileButtonText}>Profile →</Text>
-            </TouchableOpacity>
+          ))}
+        </View>
+        {hasMoreDesigners && (
+          <TouchableOpacity 
+            style={styles.seeMoreButton}
+            onPress={() => navigation.navigate('Profiles')}
+          >
+            <Text style={styles.seeMoreButtonText}>See More</Text>
+            <Text style={styles.seeMoreButtonArrow}>→</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  const renderServicesSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Services</Text>
+      <Text style={styles.sectionSubtitle}>
+        Complete design solutions for every space.
+      </Text>
+      <View style={styles.servicesGrid}>
+        {services.map((service) => (
+          <View key={service.id} style={styles.serviceCard}>
+            <Text style={styles.serviceIcon}>
+              {service.icon === 'home' ? '🏠' : '🏢'}
+            </Text>
+            <Text style={styles.serviceTitle}>{service.name}</Text>
+            <Text style={styles.serviceDescription}>{service.description}</Text>
           </View>
         ))}
-      </ScrollView>
-      {renderPaginationDots(currentDesignerIndex, designers.length, scrollToDesigner)}
-    </View>
-  );
-
-  const renderSpotlightSection = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Spotlight</Text>
-      <Text style={styles.sectionSubtitle}>
-        Discover the ideas driving today's creative trends
-      </Text>
-      <View style={styles.spotlightCard}>
-        <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=300&fit=crop' }}
-          style={styles.spotlightImage}
-        />
-        <TouchableOpacity style={styles.spotlightButton}>
-          <Text style={styles.spotlightButtonIcon}>↗</Text>
-        </TouchableOpacity>
       </View>
-      <Text style={styles.spotlightTitle}>Purchase Securely</Text>
-      <Text style={styles.spotlightDescription}>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-      </Text>
     </View>
   );
 
@@ -320,7 +378,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               <Image source={{ uri: project.imageUrl || project.image }} style={styles.projectImage} />
               <View style={styles.projectContent}>
                 <Text style={styles.projectTitle}>{project.title}</Text>
-                <Text style={styles.projectDescription}>{project.description || 'No description available'}</Text>
                 <View style={styles.projectLocation}>
                   <Text style={styles.locationIcon}>📍</Text>
                   <Text style={styles.projectLocationText}>{project.location}</Text>
@@ -342,44 +399,45 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 
-  const renderWhatPeopleThinksSection = () => (
+  const renderExploreByLocationSection = () => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>What people thinks</Text>
+      <Text style={styles.sectionTitle}>Explore by Location</Text>
       <Text style={styles.sectionSubtitle}>
-        Real stories from clients who transformed their spaces with us.
+        Complete design solutions for every space.
       </Text>
-      <ScrollView
-        ref={testimonialScrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleTestimonialScroll}
-        style={styles.carouselContainer}
-        contentContainerStyle={styles.testimonialCarouselContent}
-      >
-        {testimonials.map((testimonial) => (
-          <View key={testimonial.id} style={styles.testimonialCard}>
-            <Text style={styles.quoteIcon}>"</Text>
-            <Text style={styles.testimonialName}>{testimonial.name}</Text>
-            <Text style={styles.testimonialRole}>{testimonial.role}</Text>
-            <Text style={styles.testimonialText}>{testimonial.text}</Text>
-          </View>
-        ))}
-      </ScrollView>
-      {renderPaginationDots(currentTestimonialIndex, testimonials.length, scrollToTestimonial)}
+      <View style={styles.locationSearchContainer}>
+        <View style={styles.searchField}>
+          <Image 
+            source={require('../../assets/images/locationicon.png')} 
+            style={styles.fieldIconImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.fieldPlaceholder}>Location</Text>
+          <Text style={styles.dropdownIcon}>▼</Text>
+        </View>
+        <View style={styles.searchField}>
+          <Image 
+            source={require('../../assets/images/commercialicon.png')} 
+            style={styles.fieldIconImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.fieldPlaceholder}>Service Name</Text>
+          <Text style={styles.dropdownIcon}>▼</Text>
+        </View>
+      </View>
+      <TouchableOpacity style={styles.searchButton}>
+        <FilterIcon width={16} height={16} fill={Colors.textWhite} />
+        <Text style={styles.searchButtonText}>Search</Text>
+      </TouchableOpacity>
     </View>
   );
 
+
+
   const handleInspirationScroll = (event: any) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(contentOffsetX / (width - 80));
+    const index = Math.round(contentOffsetX / (width - 40));
     setCurrentInspirationIndex(index);
-  };
-
-  const handleDesignerScroll = (event: any) => {
-    const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const cardWidth = width * 0.85;
-    const index = Math.round(contentOffsetX / cardWidth);
-    setCurrentDesignerIndex(index);
   };
 
   const handleProjectScroll = (event: any) => {
@@ -389,25 +447,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setCurrentProjectIndex(index);
   };
 
-  const handleTestimonialScroll = (event: any) => {
-    const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const cardWidth = width * 0.85;
-    const index = Math.round(contentOffsetX / cardWidth);
-    setCurrentTestimonialIndex(index);
-  };
-
-  const scrollToTestimonial = (index: number) => {
-    setCurrentTestimonialIndex(index);
-    const cardWidth = width * 0.85;
-    testimonialScrollRef.current?.scrollTo({
-      x: index * cardWidth,
-      animated: true,
-    });
-  };
-
-  const handleBrowseCategories = () => {
-    navigation.navigate('CategoryList');
-  };
 
 
 
@@ -458,12 +497,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {renderHeroSection()}
-      {renderHowWeWorkSection()}
-      {renderInspirationDesignIdeasSection()}
       {renderFeaturedDesignersSection()}
-      {renderSpotlightSection()}
+      {renderInspirationDesignIdeasSection()}
+      {renderHowWeWorkSection()}
+      {renderServicesSection()}
       {renderRecentWorkSection()}
-      {renderWhatPeopleThinksSection()}
+      {renderExploreByLocationSection()}
     </ScrollView>
   );
 };
@@ -514,25 +553,52 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     marginBottom: 20,
+    position: 'relative',
   },
   heroImage: {
     width: '100%',
-    height: 250,
+    height: 300,
     resizeMode: 'cover',
   },
-  heroOverlay: {
+  heroContentOverlay: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: 20,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+  },
+  heroTextContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+    marginBottom: 12,
+    lineHeight: 32,
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    marginBottom: 20,
+    lineHeight: 22,
   },
   consultationButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.primary,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
     width: '100%',
@@ -565,25 +631,44 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   processGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   processCard: {
-    width: '48%',
+    width: '100%',
     backgroundColor: Colors.background,
     borderRadius: 12,
     padding: 20,
-    marginBottom: 15,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    alignItems: 'center',
   },
   processIcon: {
     fontSize: 32,
     marginBottom: 12,
+  },
+  processIconContainer: {
+    width: 56,
+    height: 56,
+    backgroundColor: '#333333',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  processIconContainerRed: {
+    backgroundColor: Colors.primary,
+  },
+  processIconImage: {
+    width: 30,
+    height: 30,
+  },
+  processCardContent: {
+    alignItems: 'center',
   },
   redIcon: {
     color: Colors.primary,
@@ -593,15 +678,18 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.semiBold,
     color: Colors.textPrimary,
     marginBottom: 6,
+    textAlign: 'center',
   },
   processSubtitle: {
     fontSize: 12,
     fontFamily: Fonts.regular,
     color: Colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 16,
+    textAlign: 'center',
   },
   carouselContainer: {
     marginBottom: 20,
+    paddingVertical: 20,
   },
   inspirationCard: {
     width: width - 40,
@@ -628,15 +716,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.semiBold,
   },
-  designerCarouselContent: {
+  inspirationCarouselContent: {
     paddingRight: 20,
   },
-  designerCard: {
-    width: width * 0.85,
+  designersContainer: {
+    flexDirection: 'column',
+  },
+  designerCardVertical: {
+    width: '100%',
+    flexDirection: 'row',
     backgroundColor: Colors.background,
     borderRadius: 12,
-    padding: 20,
-    marginRight: 15,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -644,98 +736,90 @@ const styles = StyleSheet.create({
     elevation: 3,
     alignItems: 'center',
   },
-  designerAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  designerImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: 'hidden',
+    marginRight: 16,
+    backgroundColor: '#333333',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#4CAF50',
-    marginBottom: 15,
+    borderColor: '#20C997',
   },
-  designerName: {
+  designerImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    resizeMode: 'cover',
+  },
+  designerImagePlaceholder: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FFD700',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  designerImageInitials: {
     fontSize: 18,
     fontFamily: Fonts.bold,
+    color: '#333',
+  },
+  designerCardContent: {
+    flex: 1,
+  },
+  designerCardName: {
+    fontSize: 16,
+    fontFamily: Fonts.bold,
     color: Colors.textPrimary,
-    textAlign: 'center',
+    marginBottom: 4,
+  },
+  designerCardExperience: {
+    fontSize: 12,
+    fontFamily: Fonts.regular,
+    color: '#20C997',
     marginBottom: 6,
   },
-  designerProfession: {
-    fontSize: 13,
-    fontFamily: Fonts.regular,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  designerLocation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  locationIcon: {
-    fontSize: 12,
-    marginRight: 4,
-  },
-  designerLocationText: {
+  designerCardDescription: {
     fontSize: 12,
     fontFamily: Fonts.regular,
     color: Colors.textSecondary,
+    lineHeight: 16,
   },
-  designerDescription: {
-    fontSize: 12,
-    fontFamily: Fonts.regular,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    textAlign: 'left',
-    marginBottom: 15,
-  },
-  profileButton: {
+  designerProfileButton: {
     backgroundColor: Colors.primary,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    width: '100%',
-    alignItems: 'center',
+    marginLeft: 12,
   },
-  profileButtonText: {
+  designerProfileButtonText: {
     color: Colors.textWhite,
     fontSize: 14,
     fontFamily: Fonts.semiBold,
   },
-  spotlightCard: {
-    position: 'relative',
-    marginBottom: 15,
-  },
-  spotlightImage: {
-    width: '100%',
-    height: 280,
-    borderRadius: 12,
-    resizeMode: 'cover',
-  },
-  spotlightButton: {
-    position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#000000',
+  seeMoreButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 10,
   },
-  spotlightButtonIcon: {
+  seeMoreButtonText: {
     color: Colors.textWhite,
-    fontSize: 20,
+    fontSize: 16,
+    fontFamily: Fonts.semiBold,
+    marginRight: 8,
   },
-  spotlightTitle: {
+  seeMoreButtonArrow: {
+    color: Colors.textWhite,
     fontSize: 18,
     fontFamily: Fonts.bold,
-    color: Colors.textPrimary,
-    marginBottom: 6,
-  },
-  spotlightDescription: {
-    fontSize: 13,
-    fontFamily: Fonts.regular,
-    color: Colors.textSecondary,
-    lineHeight: 19,
   },
   recentWorkSection: {
     backgroundColor: '#2A2A2A',
@@ -800,59 +884,18 @@ const styles = StyleSheet.create({
     color: Colors.textWhite,
     marginBottom: 6,
   },
-  projectDescription: {
-    fontSize: 13,
-    fontFamily: Fonts.regular,
-    color: Colors.textWhite,
-    lineHeight: 19,
-    marginBottom: 10,
-  },
   projectLocation: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  locationIcon: {
+    fontSize: 12,
+    marginRight: 4,
   },
   projectLocationText: {
     fontSize: 12,
     fontFamily: Fonts.regular,
     color: '#CCCCCC',
-  },
-  testimonialCarouselContent: {
-    paddingRight: 20,
-  },
-  testimonialCard: {
-    width: width * 0.85,
-    backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: 20,
-    marginRight: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  quoteIcon: {
-    fontSize: 36,
-    color: '#FF9800',
-    marginBottom: 15,
-  },
-  testimonialName: {
-    fontSize: 16,
-    fontFamily: Fonts.bold,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  testimonialRole: {
-    fontSize: 13,
-    fontFamily: Fonts.regular,
-    color: Colors.textSecondary,
-    marginBottom: 12,
-  },
-  testimonialText: {
-    fontSize: 13,
-    fontFamily: Fonts.regular,
-    color: Colors.textSecondary,
-    lineHeight: 20,
   },
   paginationContainer: {
     alignItems: 'center',
@@ -891,15 +934,119 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
   },
-  browseCategoriesButton: {
+  categoryTabsScroll: {
+    marginBottom: 20,
+  },
+  categoryTabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 4,
+  },
+  categoryTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 10,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+  },
+  categoryTabActive: {
+    backgroundColor: Colors.primary,
+  },
+  categoryTabText: {
+    fontSize: 13,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+  },
+  categoryTabTextActive: {
+    color: Colors.textWhite,
+    fontFamily: Fonts.semiBold,
+  },
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  serviceCard: {
+    width: '48%',
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  serviceIcon: {
+    fontSize: 32,
+    marginBottom: 12,
+  },
+  serviceTitle: {
+    fontSize: 16,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  serviceDescription: {
+    fontSize: 12,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  locationSearchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  searchField: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    marginRight: 8,
+  },
+  fieldIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  fieldIconImage: {
+    width: 16,
+    height: 16,
+    marginRight: 8,
+  },
+  fieldPlaceholder: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+  },
+  dropdownIcon: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.primary,
     paddingVertical: 12,
-    paddingHorizontal: 24,
     borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
   },
-  browseCategoriesButtonText: {
+  searchButtonIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  searchButtonIconImage: {
+    width: 16,
+    height: 16,
+    marginRight: 8,
+  },
+  searchButtonText: {
     color: Colors.textWhite,
     fontSize: 14,
     fontFamily: Fonts.semiBold,
@@ -907,3 +1054,4 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+

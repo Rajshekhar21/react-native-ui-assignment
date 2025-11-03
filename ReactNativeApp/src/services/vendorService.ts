@@ -1,6 +1,205 @@
 import { apiPost, apiGet, apiPut, apiPatch, apiDelete, handleApiError } from './apiClient';
 import { AxiosError } from 'axios';
 
+const DEFAULT_IMAGE_TYPE = 'image/jpeg';
+
+const createFormFile = (uri: string, namePrefix: string = 'upload'): { uri: string; type: string; name: string } => {
+  const extension = uri.split('.').pop()?.toLowerCase() || 'jpg';
+  const mimeType = extension === 'png' ? 'image/png' : DEFAULT_IMAGE_TYPE;
+  return {
+    uri,
+    type: mimeType,
+    name: `${namePrefix}_${Date.now()}.${extension}`,
+  };
+};
+
+export interface VendorBasicInfoPayload {
+  firebaseUid: string;
+  authProvider: 'email' | 'google' | 'apple';
+  googlePhotoURL?: string | null;
+  fullName: string;
+  companyName: string;
+  phone: string;
+  email: string;
+  address: string;
+  location?: {
+    street?: string;
+    buildingName?: string;
+    zip?: string;
+    city?: string;
+    state?: string;
+  };
+  title: string;
+  license: string;
+  about?: string;
+  profileImageUri?: string;
+  coverImageUri?: string;
+}
+
+export interface VendorProfessionalDetailsPayload {
+  experience: string;
+  specialization: string;
+  style: string;
+}
+
+export interface VendorPortfolioPayload {
+  projectName: string;
+  projectLocation: string;
+  projectType: string;
+  projectDescription: string;
+  portfolioImageUris?: string[];
+}
+
+export interface VendorVerificationPayload {
+  documentType: string;
+  documentImageUri?: string;
+  businessWebsite?: string;
+  linkedin?: string;
+  facebook?: string;
+  youtube?: string;
+  x?: string;
+  isJoinCompleted?: boolean;
+  projectLocation?: string;
+}
+
+export const submitVendorBasicInfo = async (payload: VendorBasicInfoPayload): Promise<VendorProfile> => {
+  const formData = new FormData();
+
+  formData.append('firebaseUid', payload.firebaseUid);
+  formData.append('authProvider', payload.authProvider);
+
+  if (payload.googlePhotoURL) {
+    formData.append('googlePhotoURL', payload.googlePhotoURL);
+  }
+
+  formData.append('fullName', payload.fullName);
+  formData.append('companyName', payload.companyName);
+  formData.append('phone', payload.phone);
+  formData.append('email', payload.email);
+  formData.append('address', payload.address);
+  formData.append('title', payload.title);
+  formData.append('license', payload.license);
+
+  if (payload.about) {
+    formData.append('about', payload.about);
+  }
+
+  if (payload.location) {
+    if (payload.location.street) {
+      formData.append('location.street', payload.location.street);
+    }
+    if (payload.location.buildingName) {
+      formData.append('location.buildingName', payload.location.buildingName);
+    }
+    if (payload.location.zip) {
+      formData.append('location.zip', payload.location.zip);
+    }
+    if (payload.location.city) {
+      formData.append('location.city', payload.location.city);
+    }
+    if (payload.location.state) {
+      formData.append('location.state', payload.location.state);
+    }
+  }
+
+  if (payload.profileImageUri) {
+    formData.append('profileImage', createFormFile(payload.profileImageUri, 'profile') as any);
+  }
+
+  if (payload.coverImageUri) {
+    formData.append('coverImage', createFormFile(payload.coverImageUri, 'cover') as any);
+  }
+
+  return await completeVendorRegistration(formData);
+};
+
+export const updateVendorProfessionalDetails = async (
+  payload: VendorProfessionalDetailsPayload
+): Promise<VendorProfile> => {
+  const formData = new FormData();
+  formData.append('experience', payload.experience);
+  formData.append('specialization', payload.specialization);
+  formData.append('style', payload.style);
+
+  const response = await apiPut('/vendors/profile', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data || response;
+};
+
+export const updateVendorPortfolioDetails = async (
+  payload: VendorPortfolioPayload
+): Promise<VendorProfile> => {
+  const formData = new FormData();
+  formData.append('projectName', payload.projectName);
+  formData.append('projectLocation', payload.projectLocation);
+  formData.append('projectType', payload.projectType);
+  formData.append('projectDescription', payload.projectDescription);
+
+  if (payload.portfolioImageUris?.length) {
+    payload.portfolioImageUris.forEach((uri, index) => {
+      formData.append('portfolio', createFormFile(uri, `portfolio_${index}`) as any);
+    });
+  }
+
+  const response = await apiPut('/vendors/profile', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data || response;
+};
+
+export const completeVendorVerificationStep = async (
+  payload: VendorVerificationPayload
+): Promise<VendorProfile> => {
+  const formData = new FormData();
+
+  formData.append('documentType', payload.documentType);
+
+  if (payload.documentImageUri) {
+    formData.append('documentImage', createFormFile(payload.documentImageUri, 'document') as any);
+  }
+
+  if (payload.projectLocation) {
+    formData.append('projectLocation', payload.projectLocation);
+  }
+
+  if (payload.businessWebsite) {
+    formData.append('businessWebsite', payload.businessWebsite);
+  }
+
+  if (payload.linkedin) {
+    formData.append('linkedin', payload.linkedin);
+  }
+
+  if (payload.facebook) {
+    formData.append('facebook', payload.facebook);
+  }
+
+  if (payload.youtube) {
+    formData.append('youtube', payload.youtube);
+  }
+
+  if (payload.x) {
+    formData.append('x', payload.x);
+  }
+
+  formData.append('isJoinCompleted', String(payload.isJoinCompleted ?? true));
+
+  const response = await apiPut('/vendors/profile', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data || response;
+};
+
 export interface VendorProfile {
   id: string;
   name: string;

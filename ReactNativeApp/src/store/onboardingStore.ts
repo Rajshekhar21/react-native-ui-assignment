@@ -10,13 +10,19 @@ export interface OnboardingData {
     dob?: string;
   };
   businessDetails?: {
+    fullName: string;
     companyName: string;
     businessEmail: string;
     businessAddress: string;
+    phoneNumber: string;
+    title: string;
     license: string;
+    about: string;
   };
   professionalProfile?: {
     yearsOfExperience: string;
+    specialization: string;
+    styleExpertise: string;
     categories: string[];
     projectTypes: string[];
     styles: string[];
@@ -41,6 +47,14 @@ export interface OnboardingData {
   verification?: {
     documentType: string;
     documentImage: string;
+    projectLocation?: string;
+  };
+  socialLinks?: {
+    businessWebsite?: string;
+    linkedin?: string;
+    facebook?: string;
+    youtube?: string;
+    x?: string;
   };
   uploadedFiles: {
     profileImage?: string;
@@ -123,7 +137,16 @@ class OnboardingStore {
       throw new Error('Onboarding data not initialized');
     }
     
-    this.data.businessDetails = businessDetails;
+    this.data.businessDetails = {
+      fullName: businessDetails.fullName,
+      companyName: businessDetails.companyName,
+      businessEmail: businessDetails.businessEmail,
+      businessAddress: businessDetails.businessAddress,
+      phoneNumber: businessDetails.phoneNumber,
+      title: businessDetails.title,
+      license: businessDetails.license,
+      about: businessDetails.about,
+    };
     await this.persistData();
   }
 
@@ -133,7 +156,16 @@ class OnboardingStore {
       throw new Error('Onboarding data not initialized');
     }
     
-    this.data.professionalProfile = professionalProfile;
+    this.data.professionalProfile = {
+      yearsOfExperience: professionalProfile.yearsOfExperience,
+      specialization: professionalProfile.specialization,
+      styleExpertise: professionalProfile.styleExpertise,
+      categories: professionalProfile.categories || [],
+      projectTypes: professionalProfile.projectTypes || [],
+      styles: professionalProfile.styles || [],
+      languages: professionalProfile.languages || [],
+      businessHighlights: professionalProfile.businessHighlights || [],
+    };
     await this.persistData();
   }
 
@@ -148,6 +180,15 @@ class OnboardingStore {
     }
     
     this.data.portfolio.push(project);
+    await this.persistData();
+  }
+
+  async setPortfolioProjects(projects: OnboardingData['portfolio']): Promise<void> {
+    if (!this.data) {
+      throw new Error('Onboarding data not initialized');
+    }
+
+    this.data.portfolio = projects;
     await this.persistData();
   }
 
@@ -167,7 +208,14 @@ class OnboardingStore {
       throw new Error('Onboarding data not initialized');
     }
     
-    this.data.address = address;
+    this.data.address = {
+      street: address.street,
+      building: address.building,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      geo: address.geo,
+    };
     await this.persistData();
   }
 
@@ -177,7 +225,27 @@ class OnboardingStore {
       throw new Error('Onboarding data not initialized');
     }
     
-    this.data.verification = verification;
+    this.data.verification = {
+      documentType: verification.documentType,
+      documentImage: verification.documentImage,
+      projectLocation: verification.projectLocation,
+    };
+    await this.persistData();
+  }
+
+  // Set social links
+  async setSocialLinks(socialLinks: OnboardingData['socialLinks']): Promise<void> {
+    if (!this.data) {
+      throw new Error('Onboarding data not initialized');
+    }
+
+    this.data.socialLinks = {
+      businessWebsite: socialLinks.businessWebsite,
+      linkedin: socialLinks.linkedin,
+      facebook: socialLinks.facebook,
+      youtube: socialLinks.youtube,
+      x: socialLinks.x,
+    };
     await this.persistData();
   }
 
@@ -239,8 +307,10 @@ class OnboardingStore {
       if (!this.data.businessDetails?.businessEmail) missingFields.push('businessEmail');
       if (!this.data.businessDetails?.license) missingFields.push('license');
       if (!this.data.professionalProfile?.yearsOfExperience) missingFields.push('yearsOfExperience');
-      if (!this.data.professionalProfile?.categories?.length) missingFields.push('categories');
+      if (!this.data.professionalProfile?.specialization) missingFields.push('specialization');
+      if (!this.data.professionalProfile?.styleExpertise) missingFields.push('styleExpertise');
       if (!this.data.address?.city) missingFields.push('city');
+      if (!this.data.verification?.documentType) missingFields.push('documentType');
       if (!this.data.verification?.documentImage) missingFields.push('documentImage');
     }
 
@@ -266,12 +336,20 @@ class OnboardingStore {
     // Vendor-specific data
     if (this.data.accountType === 'vendor') {
       if (this.data.businessDetails) {
-        formData.append('title', this.data.businessDetails.companyName);
+        formData.append('fullName', this.data.businessDetails.fullName);
+        formData.append('companyName', this.data.businessDetails.companyName);
+        formData.append('phone', this.data.businessDetails.phoneNumber || this.data.userDetails.phone);
+        formData.append('businessEmail', this.data.businessDetails.businessEmail);
+        formData.append('address', this.data.businessDetails.businessAddress);
+        formData.append('title', this.data.businessDetails.title);
         formData.append('license', this.data.businessDetails.license);
+        formData.append('about', this.data.businessDetails.about);
       }
 
       if (this.data.professionalProfile) {
-        formData.append('about', this.data.professionalProfile.businessHighlights.join(', '));
+        formData.append('experience', this.data.professionalProfile.yearsOfExperience);
+        formData.append('specialization', this.data.professionalProfile.specialization);
+        formData.append('style', this.data.professionalProfile.styleExpertise);
         formData.append('categories', JSON.stringify(this.data.professionalProfile.categories));
         formData.append('projectTypes', JSON.stringify(this.data.professionalProfile.projectTypes));
         formData.append('styles', JSON.stringify(this.data.professionalProfile.styles));
@@ -280,9 +358,11 @@ class OnboardingStore {
       }
 
       if (this.data.address) {
-        formData.append('location[city]', this.data.address.city);
-        formData.append('location[state]', this.data.address.state);
-        formData.append('location[pincode]', this.data.address.pincode);
+        formData.append('location.street', this.data.address.street);
+        formData.append('location.buildingName', this.data.address.building);
+        formData.append('location.city', this.data.address.city);
+        formData.append('location.state', this.data.address.state);
+        formData.append('location.zip', this.data.address.pincode);
       }
 
       // Add uploaded files
@@ -318,6 +398,31 @@ class OnboardingStore {
           type: 'image/jpeg',
           name: 'document.jpg',
         } as any);
+      }
+
+      if (this.data.verification) {
+        formData.append('documentType', this.data.verification.documentType);
+        if (this.data.verification.projectLocation) {
+          formData.append('projectLocation', this.data.verification.projectLocation);
+        }
+      }
+
+      if (this.data.socialLinks) {
+        if (this.data.socialLinks.businessWebsite) {
+          formData.append('businessWebsite', this.data.socialLinks.businessWebsite);
+        }
+        if (this.data.socialLinks.linkedin) {
+          formData.append('linkedin', this.data.socialLinks.linkedin);
+        }
+        if (this.data.socialLinks.facebook) {
+          formData.append('facebook', this.data.socialLinks.facebook);
+        }
+        if (this.data.socialLinks.youtube) {
+          formData.append('youtube', this.data.socialLinks.youtube);
+        }
+        if (this.data.socialLinks.x) {
+          formData.append('x', this.data.socialLinks.x);
+        }
       }
     }
 

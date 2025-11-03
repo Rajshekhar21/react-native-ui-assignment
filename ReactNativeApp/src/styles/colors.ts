@@ -1,8 +1,16 @@
 export const Colors = {
   // Primary Colors
-  primary: '#FF6B6B',
+  primary: '#FF6F61',
   primaryDark: '#E55A5A',
   primaryLight: '#FF8A8A',
+
+  // Onboarding Accent Palette
+  onboardingAccent: '#1DA1A5',
+  onboardingAccentDark: '#12827E',
+  onboardingAccentLight: '#E4F6F6',
+  onboardingAccentMuted: '#B9E4E2',
+  onboardingProgressActive: '#FF6F61',
+  onboardingProgressInactive: '#E6E9EF',
   
   // Background Colors
   background: '#FFFFFF',

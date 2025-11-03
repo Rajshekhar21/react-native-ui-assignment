@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '../../navigation/AppNavigator';
 import { useAuth } from '../../context/AuthContextSimple';
-import AuthHeader from '../../components/AuthHeader';
+import { onboardingStore } from '../../store/onboardingStore';
+import { completeVendorVerificationStep } from '../../services/vendorService';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
 import CustomDropdown from '../../components/CustomDropdown';
 import UploadButton from '../../components/UploadButton';
 import { Colors } from '../../styles/colors';
 import { Fonts } from '../../styles/fonts';
+import { pickImageFromGallery } from '../../services/uploadService';
+import OnboardingProgressHeader from '../../components/OnboardingProgressHeader';
 
 type VerificationDocumentScreenNavigationProp = StackNavigationProp<OnboardingStackParamList, 'VerificationDocument'>;
 
@@ -26,8 +29,10 @@ const VerificationDocumentScreen: React.FC<Props> = ({ navigation }) => {
     facebookUrl: '',
     youtubeUrl: '',
     xUrl: '',
+    documentType: '',
   });
   const [documentUri, setDocumentUri] = useState<string | undefined>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const projectLocationOptions = [
     { label: 'Dehradun', value: 'Dehradun' },
@@ -38,8 +43,61 @@ const VerificationDocumentScreen: React.FC<Props> = ({ navigation }) => {
     { label: 'Kolkata', value: 'Kolkata' },
   ];
 
+  const documentTypeOptions = [
+    { label: 'Business License', value: 'business_license' },
+    { label: 'GST Certificate', value: 'gst_certificate' },
+    { label: 'Tax Document', value: 'tax_document' },
+    { label: 'Other', value: 'other' },
+  ];
+
+  useEffect(() => {
+    const data = onboardingStore.getData();
+    if (data?.verification) {
+      setFormData(prev => ({
+        ...prev,
+        projectLocation: data.verification.projectLocation || prev.projectLocation,
+        documentType: data.verification.documentType || prev.documentType,
+      }));
+      if (data.verification.documentImage) {
+        setDocumentUri(data.verification.documentImage);
+      }
+    }
+
+    if (data?.socialLinks) {
+      setFormData(prev => ({
+        ...prev,
+        businessWebsite: data.socialLinks?.businessWebsite || prev.businessWebsite,
+        linkedinUrl: data.socialLinks?.linkedin || prev.linkedinUrl,
+        facebookUrl: data.socialLinks?.facebook || prev.facebookUrl,
+        youtubeUrl: data.socialLinks?.youtube || prev.youtubeUrl,
+        xUrl: data.socialLinks?.x || prev.xUrl,
+      }));
+    }
+  }, []);
+
   const handleContinue = async () => {
+    if (!formData.documentType) {
+      Alert.alert('Missing information', 'Please select a document type.');
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+
+      await onboardingStore.setVerification({
+        documentType: formData.documentType,
+        documentImage: documentUri || '',
+        projectLocation: formData.projectLocation,
+      });
+
+      await onboardingStore.setSocialLinks({
+        businessWebsite: formData.businessWebsite,
+        linkedin: formData.linkedinUrl,
+        facebook: formData.facebookUrl,
+        youtube: formData.youtubeUrl,
+        x: formData.xUrl,
+      });
+
       await updateUser({
         profile: {
           ...user?.profile,
@@ -47,33 +105,57 @@ const VerificationDocumentScreen: React.FC<Props> = ({ navigation }) => {
             ...(user?.profile?.verificationDocuments || []),
             {
               id: Date.now().toString(),
-              type: 'business_license',
+              type: formData.documentType,
               url: documentUri || '',
               uploadedAt: new Date().toISOString(),
             },
           ],
         },
       });
-      
+
+      await completeVendorVerificationStep({
+        documentType: formData.documentType,
+        documentImageUri: documentUri,
+        projectLocation: formData.projectLocation,
+        businessWebsite: formData.businessWebsite,
+        linkedin: formData.linkedinUrl,
+        facebook: formData.facebookUrl,
+        youtube: formData.youtubeUrl,
+        x: formData.xUrl,
+        isJoinCompleted: true,
+      });
+
       await completeOnboarding();
-      // Navigation will be handled by AuthContext
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing onboarding:', error);
+      Alert.alert('Failed', error.message || 'Unable to finish onboarding right now.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleSkip = async () => {
+  const handleSkip = () => {
+    if (!isSubmitting) {
+      setFormData(prev => ({
+        ...prev,
+        documentType: prev.documentType || documentTypeOptions[0].value,
+        projectLocation: prev.projectLocation || projectLocationOptions[0].value,
+      }));
+
+      setTimeout(() => {
+        handleContinue();
+      }, 0);
+    }
+  };
+
+  const handleUploadDocument = async () => {
     try {
-      await completeOnboarding();
-      // Navigation will be handled by AuthContext
+      const uri = await pickImageFromGallery({ mediaType: 'photo' });
+      setDocumentUri(uri);
+      await onboardingStore.setUploadedFiles({ documentImage: uri });
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.log('Document upload cancelled or failed:', error);
     }
-  };
-
-  const handleUploadDocument = () => {
-    // TODO: Implement document picker
-    console.log('Upload document');
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -81,15 +163,16 @@ const VerificationDocumentScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <AuthHeader 
+    <View style={styles.screen}>
+      <OnboardingProgressHeader
         title="Verification"
-        subtitle="Complete your profile verification"
+        subtitle="Complete your profile with documents and social links."
+        step={5}
+        totalSteps={5}
       />
-      
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
-          <View style={styles.uploadContainer}>
+      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.formCard}>
+          <View style={styles.uploadSection}>
             <Text style={styles.uploadLabel}>Upload Document</Text>
             <UploadButton
               title="Upload Document"
@@ -99,66 +182,87 @@ const VerificationDocumentScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <CustomDropdown
-            label="Select Project Location"
+            label="Document Type"
+            placeholder="Select document type"
+            options={documentTypeOptions}
+            selectedValue={formData.documentType}
+            onValueChange={(value) => handleInputChange('documentType', value)}
+            accentColor={Colors.onboardingAccent}
+          />
+
+          <CustomDropdown
+            label="Project Location"
             placeholder="Choose your project location"
             options={projectLocationOptions}
             selectedValue={formData.projectLocation}
             onValueChange={(value) => handleInputChange('projectLocation', value)}
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomInput
-            label="Enter Business Website"
+            label="Business Website"
             placeholder="https://yourwebsite.com"
             value={formData.businessWebsite}
             onChangeText={(value) => handleInputChange('businessWebsite', value)}
-            keyboardType="default"
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomInput
-            label="Enter LinkedIn URL"
+            label="LinkedIn URL"
             placeholder="https://linkedin.com/in/yourprofile"
             value={formData.linkedinUrl}
             onChangeText={(value) => handleInputChange('linkedinUrl', value)}
-            keyboardType="default"
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomInput
-            label="Enter Facebook URL"
+            label="Facebook URL"
             placeholder="https://facebook.com/yourpage"
             value={formData.facebookUrl}
             onChangeText={(value) => handleInputChange('facebookUrl', value)}
-            keyboardType="default"
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomInput
-            label="Enter YouTube URL"
+            label="YouTube URL"
             placeholder="https://youtube.com/yourchannel"
             value={formData.youtubeUrl}
             onChangeText={(value) => handleInputChange('youtubeUrl', value)}
-            keyboardType="default"
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomInput
-            label="Enter X URL"
+            label="X (Twitter) URL"
             placeholder="https://x.com/yourhandle"
             value={formData.xUrl}
             onChangeText={(value) => handleInputChange('xUrl', value)}
-            keyboardType="default"
+            accentColor={Colors.onboardingAccent}
           />
+        </View>
 
-          <View style={styles.navigationContainer}>
-            <CustomButton
-              title="Back"
-              onPress={() => navigation.goBack()}
-              variant="secondary"
-              style={styles.backButton}
-            />
-            <CustomButton
-              title="Skip & Save"
-              onPress={handleSkip}
-              style={styles.skipButton}
-            />
-          </View>
+        <View style={styles.footerActions}>
+          <CustomButton
+            title="Back"
+            onPress={() => navigation.goBack()}
+            variant="outline"
+            style={[styles.outlineButton, { borderColor: Colors.onboardingAccent }]}
+            textStyle={{ color: Colors.onboardingAccent }}
+          />
+          <CustomButton
+            title={isSubmitting ? 'Finishing...' : 'Skip & Save'}
+            onPress={handleSkip}
+            variant="secondary"
+            style={styles.skipButton}
+            textStyle={{ color: Colors.onboardingAccent }}
+            disabled={isSubmitting}
+          />
+          <CustomButton
+            title={isSubmitting ? 'Finishing...' : 'Complete Onboarding'}
+            onPress={handleContinue}
+            variant="onboarding"
+            style={styles.primaryButton}
+            disabled={isSubmitting}
+          />
         </View>
       </ScrollView>
     </View>
@@ -166,40 +270,52 @@ const VerificationDocumentScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.backgroundSecondary,
   },
-  content: {
+  scrollArea: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingBottom: 40,
   },
-  formContainer: {
-    flex: 1,
+  formCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 16,
+    elevation: 3,
+    gap: 16,
   },
-  uploadContainer: {
-    marginBottom: 20,
+  uploadSection: {
+    gap: 12,
   },
   uploadLabel: {
     fontSize: 14,
     fontFamily: Fonts.medium,
     color: Colors.textPrimary,
-    marginBottom: 8,
   },
-  navigationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: 20,
-    marginTop: 20,
+  footerActions: {
+    marginTop: 28,
+    gap: 12,
   },
-  backButton: {
-    flex: 1,
-    marginRight: 8,
+  outlineButton: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    backgroundColor: Colors.background,
   },
   skipButton: {
-    flex: 2,
-    marginLeft: 8,
+    borderRadius: 14,
+    backgroundColor: Colors.onboardingAccentLight,
+    borderWidth: 0,
+  },
+  primaryButton: {
+    borderRadius: 14,
   },
 });
 

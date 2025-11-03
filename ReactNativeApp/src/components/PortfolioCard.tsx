@@ -25,6 +25,7 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({ project, onPress }) => {
           {project.name}
         </Text>
         <View style={styles.ratingContainer}>
+          <Text style={styles.starIcon}>⭐</Text>
           <Text style={styles.rating}>
             {project.rating} ({project.reviewCount} reviews)
           </Text>
@@ -34,6 +35,7 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({ project, onPress }) => {
           <Text style={styles.location} numberOfLines={1}>
             {project.location}
           </Text>
+          <Text style={styles.shareIcon}>↗</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -69,7 +71,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 6,
+  },
+  starIcon: {
+    fontSize: 12,
+    marginRight: 4,
   },
   rating: {
     fontSize: 12,
@@ -79,6 +87,7 @@ const styles = StyleSheet.create({
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   locationIcon: {
     fontSize: 10,
@@ -89,6 +98,10 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     color: Colors.textSecondary,
     flex: 1,
+  },
+  shareIcon: {
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
 });
 

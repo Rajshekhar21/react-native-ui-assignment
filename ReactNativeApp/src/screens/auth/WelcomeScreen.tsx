@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Image } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuth } from '../../context/AuthContextSimple';
@@ -24,6 +24,7 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
     agreeToTerms: false,
   });
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateForm = () => {
     const errors: {[key: string]: string} = {};
@@ -83,28 +84,34 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <AuthHeader 
         title="Welcome to Decor mate"
-        subtitle="Create your account to get started"
+        subtitle="Enter your email and password to log in"
       />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
+      <View style={styles.formCard}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.formContainer}>
           <CustomButton
             title="Continue with Google"
             onPress={handleGoogleAuth}
             variant="google"
-            icon={<Text style={styles.googleIcon}>G</Text>}
+            icon={
+              <Image 
+                source={require('../../../assets/images/google.png')} 
+                style={styles.googleIcon}
+                resizeMode="contain"
+              />
+            }
             style={styles.googleButton}
           />
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>Or login with</Text>
             <View style={styles.dividerLine} />
           </View>
 
           <CustomInput
-            label="Email or Phone Number"
-            placeholder="Enter your email or phone"
+            placeholder="Email or Phone Number"
             value={formData.email}
             onChangeText={(value) => handleInputChange('email', value)}
             keyboardType="email-address"
@@ -112,12 +119,18 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <CustomInput
-            label="Password"
-            placeholder="Enter your password"
+            placeholder="Password"
             value={formData.password}
             onChangeText={(value) => handleInputChange('password', value)}
-            secureTextEntry
+            secureTextEntry={!showPassword}
             error={validationErrors.password}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Text style={styles.eyeIcon}>
+                  {showPassword ? '👁️‍🗨️' : '👁️'}
+                </Text>
+              </TouchableOpacity>
+            }
           />
 
           <CheckBox
@@ -156,8 +169,10 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
             variant="outline"
             style={styles.guestButton}
           />
-        </View>
-      </ScrollView>
+
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -167,10 +182,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  formCard: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    marginTop: -16,
+    marginHorizontal: 16,
+    paddingTop: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 8,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 30,
   },
   formContainer: {
     flex: 1,
@@ -179,9 +207,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 8,
+  },
+  eyeIcon: {
     fontSize: 18,
-    fontFamily: Fonts.bold,
-    color: Colors.textPrimary,
+    color: Colors.textTertiary,
   },
   divider: {
     flexDirection: 'row',
@@ -229,6 +261,9 @@ const styles = StyleSheet.create({
   },
   guestButton: {
     marginTop: 16,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.primary
   },
 });
 

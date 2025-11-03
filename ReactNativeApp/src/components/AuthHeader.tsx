@@ -38,11 +38,10 @@ const AuthHeader: React.FC<AuthHeaderProps> = ({ title, subtitle, onBack }) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.primary,
-    paddingTop: 60,
-    paddingBottom: 30,
+    paddingTop: 100,
+    paddingBottom: 140,
+    marginBottom: -100,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
     position: 'relative',
   },
   backButton: {
@@ -62,17 +61,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   title: {
-    fontSize: 28,
+    fontSize: 34,
     fontFamily: Fonts.bold,
     color: Colors.textWhite,
     textAlign: 'center',
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,
     fontFamily: Fonts.regular,
     color: Colors.textWhite,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 4,
     opacity: 0.9,
   },
 });

@@ -1,4 +1,4 @@
-import firebase from '@react-native-firebase/app';
+import { getApps, initializeApp } from '@react-native-firebase/app';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
@@ -13,9 +13,9 @@ const firebaseConfig = {
   appId: "1:96274365009:ios:86107b6a5f630135925670",
 };
 
-// Initialize Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+// Initialize Firebase using modular SDK
+if (getApps().length === 0) {
+  initializeApp(firebaseConfig);
   console.log('Firebase initialized successfully');
 } else {
   console.log('Firebase already initialized');
@@ -28,5 +28,5 @@ GoogleSignin.configure({
   offlineAccess: true,
 });
 
-export { auth, firebase };
+export { auth };
 export default auth;

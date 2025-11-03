@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '../../navigation/AppNavigator';
 import { useAuth } from '../../context/AuthContextSimple';
-import AuthHeader from '../../components/AuthHeader';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
 import CustomDropdown from '../../components/CustomDropdown';
 import { Colors } from '../../styles/colors';
-import { Fonts } from '../../styles/fonts';
+import OnboardingProgressHeader from '../../components/OnboardingProgressHeader';
 
-type UserDetailsScreenNavigationProp = StackNavigationProp<OnboardingStackParamList, 'UserDetails'>;
+ type UserDetailsScreenNavigationProp = StackNavigationProp<OnboardingStackParamList, 'UserDetails'>;
 
 interface Props {
   navigation: UserDetailsScreenNavigationProp;
@@ -20,12 +19,12 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const { user, updateUser } = useAuth();
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
-    phoneNumber: user?.phone || '81265 28355',
+    phoneNumber: user?.phone || '',
     email: user?.email || '',
     lookingFor: '',
     suitableOption: '',
   });
-  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   const lookingForOptions = [
     { label: 'Interior Design Services', value: 'interior_design' },
@@ -44,37 +43,36 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
   ];
 
   const validateForm = () => {
-    const errors: {[key: string]: string} = {};
-    
+    const errors: { [key: string]: string } = {};
+
     if (!formData.fullName.trim()) {
       errors.fullName = 'Full name is required';
     }
-    
+
     if (!formData.phoneNumber.trim()) {
       errors.phoneNumber = 'Phone number is required';
     }
-    
+
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       errors.email = 'Please enter a valid email';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleContinue = async () => {
     if (!validateForm()) return;
-    
+
     try {
       await updateUser({
         name: formData.fullName,
         phone: formData.phoneNumber,
         email: formData.email,
       });
-      
-      // Navigate based on user role
+
       if (user?.role === 'vendor') {
         navigation.navigate('BusinessDetails');
       } else {
@@ -86,7 +84,6 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSkip = () => {
-    // Navigate based on user role
     if (user?.role === 'vendor') {
       navigation.navigate('BusinessDetails');
     } else {
@@ -102,20 +99,21 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <AuthHeader 
-        title="Details"
-        subtitle="Tell us more about yourself"
+    <View style={styles.screen}>
+      <OnboardingProgressHeader
+        title="Tell Us About You"
+        subtitle="Share your contact details so we can stay in touch."
+        hideProgress
       />
-      
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
+      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.formCard}>
           <CustomInput
             label="Full Name"
             placeholder="Enter your full name"
             value={formData.fullName}
             onChangeText={(value) => handleInputChange('fullName', value)}
             error={validationErrors.fullName}
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomInput
@@ -125,6 +123,7 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
             onChangeText={(value) => handleInputChange('phoneNumber', value)}
             keyboardType="phone-pad"
             error={validationErrors.phoneNumber}
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomInput
@@ -134,37 +133,42 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
             onChangeText={(value) => handleInputChange('email', value)}
             keyboardType="email-address"
             error={validationErrors.email}
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomDropdown
             label="What are you looking for?"
-            placeholder="Select what you're looking for"
+            placeholder="Select an option"
             options={lookingForOptions}
             selectedValue={formData.lookingFor}
             onValueChange={(value) => handleInputChange('lookingFor', value)}
+            accentColor={Colors.onboardingAccent}
           />
 
           <CustomDropdown
-            label="Select Suitable Option"
-            placeholder="Choose your preference"
+            label="What suits you best?"
+            placeholder="Select an option"
             options={suitableOptions}
             selectedValue={formData.suitableOption}
             onValueChange={(value) => handleInputChange('suitableOption', value)}
+            accentColor={Colors.onboardingAccent}
           />
+        </View>
 
-          <View style={styles.navigationContainer}>
-            <CustomButton
-              title="Back"
-              onPress={() => navigation.goBack()}
-              variant="secondary"
-              style={styles.backButton}
-            />
-            <CustomButton
-              title="Skip & Save"
-              onPress={handleSkip}
-              style={styles.skipButton}
-            />
-          </View>
+        <View style={styles.footerActions}>
+          <CustomButton
+            title="Skip"
+            onPress={handleSkip}
+            variant="secondary"
+            style={styles.skipButton}
+            textStyle={{ color: Colors.onboardingAccent }}
+          />
+          <CustomButton
+            title="Continue"
+            onPress={handleContinue}
+            variant="onboarding"
+            style={styles.primaryButton}
+          />
         </View>
       </ScrollView>
     </View>
@@ -172,31 +176,39 @@ const UserDetailsScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.backgroundSecondary,
   },
-  content: {
+  scrollArea: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingBottom: 40,
   },
-  formContainer: {
-    flex: 1,
+  formCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 16,
+    elevation: 3,
+    gap: 16,
   },
-  navigationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: 20,
-    marginTop: 20,
-  },
-  backButton: {
-    flex: 1,
-    marginRight: 8,
+  footerActions: {
+    marginTop: 28,
+    gap: 12,
   },
   skipButton: {
-    flex: 2,
-    marginLeft: 8,
+    borderRadius: 14,
+    backgroundColor: Colors.onboardingAccentLight,
+    borderWidth: 0,
+  },
+  primaryButton: {
+    borderRadius: 14,
   },
 });
 
